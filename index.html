@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Seguimiento de recomendaciones · Knowledge Consulting</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ink:#1E1433;--ink2:#3A3350;--muted:#625C74;--line:#E7E3F0;--line2:#F0EDF6;--bg:#F6F4FA;
+  --purple:#6B2FD6;--purple-d:#5B21B6;--purple-dd:#3F1D8F;--teal:#087B77;--teal-d:#05605C;
+  --track:#ECE8F4;--magenta:#9D1F8C;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:'Montserrat',system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--ink)}
+button{font-family:inherit;color:inherit}
+button:focus-visible{outline:3px solid #8B5CF6;outline-offset:2px}
+.wrap{max-width:1320px;margin:0 auto;padding-left:24px;padding-right:24px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.eyebrow.teal{color:var(--teal)}
+.muted{color:var(--muted)}
+.track{height:8px;border-radius:999px;background:var(--track);overflow:hidden}
+.track>span{display:block;height:100%;background:var(--teal);border-radius:999px}
+.stack{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--track)}
+.stack>span{display:block;height:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 8px;border-radius:999px;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.sq{width:10px;height:10px;border-radius:3px;display:inline-block;flex-shrink:0}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:0;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn.primary{background:var(--purple);color:#fff}
+.btn.teal{background:var(--teal);color:#fff}
+.btn.ghost{background:#fff;border:1px solid #D9D3E8;color:var(--purple-dd);font-weight:600}
+.btn.outline{background:#fff;border:1.5px solid var(--purple);color:var(--purple-d)}
+.grid-auto{display:grid;gap:16px}
+h1,h2,h3{margin:0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Datos ---------- */
+  var ST = [
+    { label: 'No iniciado', long: 'No iniciado', bg: '#EFEDF3', fg: '#4F4B63', dot: '#A9A4BA', bar: '#D6D2E1' },
+    { label: 'En curso', long: 'En curso', bg: '#FFF3D6', fg: '#7A4F00', dot: '#D99A06', bar: '#F0B429' },
+    { label: 'En revisión', long: 'Evidencia en revisión', bg: '#EEE7FC', fg: '#5321B0', dot: '#8B5CF6', bar: '#9B72F2' },
+    { label: 'Cubierta', long: 'Cubierta', bg: '#DDF2F0', fg: '#05605C', dot: '#087B77', bar: '#087B77' }
+  ];
+  var GROUPS = {
+    ci: [
+      { id: 'c1', n: 'Componente 1', name: 'Ambiente de Control' },
+      { id: 'c2', n: 'Componente 2', name: 'Evaluación de Riesgos' },
+      { id: 'c3', n: 'Componente 3', name: 'Actividades de Control' },
+      { id: 'c4', n: 'Componente 4', name: 'Información y Comunicación' },
+      { id: 'c5', n: 'Componente 5', name: 'Monitoreo' }
+    ],
+    ti: [
+      { id: 't0', n: 'Proceso 0', name: 'Gobierno' },
+      { id: 't1', n: 'Proceso 1', name: 'Accesos Lógicos' },
+      { id: 't2', n: 'Proceso 2', name: 'Cambios a Programas' },
+      { id: 't3', n: 'Proceso 3', name: 'Operaciones de TI' },
+      { id: 't4', n: 'Proceso 4', name: 'Ciberseguridad' }
+    ]
+  };
+  var R = [
+    ['AC-001', 'ci', 'c1', 'Alto', 'Políticas y procedimientos de Reporte Financiero', 'CI-P1', 3],
+    ['AC-002', 'ci', 'c1', 'Alto', 'Comunicación y seguimiento de observaciones de auditoría interna y externa', 'CI-P6', 2],
+    ['AC-003', 'ci', 'c1', 'Medio', 'Trazabilidad de sanciones por canal de denuncias', 'CI-P6', 1],
+    ['AC-004', 'ci', 'c1', 'Alto', 'Plan de sucesión', 'CI-P2', 1],
+    ['AC-005', 'ci', 'c1', 'Alto', 'Estructura de área de Control Interno', 'CI-P2', 1],
+    ['AC-006', 'ci', 'c1', 'Alto', 'Manuales de Organización y Funciones (MOF)', 'CI-P2', 0],
+    ['AC-007', 'ci', 'c1', 'Alto', 'Evaluación de la estructura organizacional', 'CI-P2', 0],
+    ['AC-008', 'ci', 'c1', 'Medio', 'Complementar plan de retención de talento', 'CI-P2', 0],
+    ['AC-009', 'ci', 'c1', 'Alto', 'Cultura de riesgos y controles. Capacitaciones en Control Interno y SOX', 'CI-P5', 1],
+    ['AC-010', 'ci', 'c1', 'Alto', 'Diseño / actualización de Entity Level Controls (ELC)', 'CI-P4', 1],
+    ['ER-001', 'ci', 'c2', 'Medio', 'Despliegue del Plan Estratégico y objetivos (KPI)', 'CI-P3', 1],
+    ['ER-002', 'ci', 'c2', 'Medio', 'Metodología corporativa de Gestión de Riesgos', 'CI-P3', 3],
+    ['ER-003', 'ci', 'c2', 'Alto', 'Materialidad financiera y alcance SOX (Scoping)', 'CI-P4', 2],
+    ['ER-004', 'ci', 'c2', 'Alto', 'Plan de Continuidad del Negocio', 'CI-P3', 0],
+    ['ACC-001', 'ci', 'c3', 'Alto', 'Procesos relevantes para fines de Reporte Financiero (SOX)', 'CI-P4', 1],
+    ['ACC-002', 'ci', 'c3', 'Alto', 'Management Review Controls (MRC) e Información Producida por la Entidad (IPE)', 'CI-P4', 0],
+    ['ITGC', 'ci', 'c3', 'Alto', 'Sección especial de TI: su avance sale del diagnóstico de TI', null, 0],
+    ['IC-001', 'ci', 'c4', 'Medio', 'Comunicación a reguladores (SEC y SMV)', 'CI-P7', 3],
+    ['IC-002', 'ci', 'c4', 'Alto', 'Procedimiento de Comunicación Externa', 'CI-P7', 1],
+    ['MC-001', 'ci', 'c5', 'Alto', 'Evaluaciones continuas y/o independientes del Sistema de Control Interno', 'CI-P8', 0],
+    ['R-GOB-1', 'ti', 't0', 'Alto', 'Analizar la segregación interna de funciones de TI', 'TI-P1', 3],
+    ['R-GOB-2', 'ti', 't0', 'Alto', 'Redefinir la segunda línea de defensa de IT/Ciberseguridad', 'TI-P1', 1],
+    ['R-GOB-3', 'ti', 't0', 'Alto', 'Metodología de riesgos de IT/Ciberseguridad', 'TI-P1', 1],
+    ['R-GOB-4', 'ti', 't0', 'Alto', 'Comité de ciberseguridad', 'TI-P1', 3],
+    ['R-ACC-1', 'ti', 't1', 'Alto', 'Independizar funciones de operación y revisión de accesos', 'TI-P2', 1],
+    ['R-ACC-2', 'ti', 't1', 'Alto', 'Actualizar las matrices e implementarlas en la operación', 'TI-P2', 1],
+    ['R-ACC-3', 'ti', 't1', 'Alto', 'Fortalecer el rol del Key User', 'TI-P2', 0],
+    ['R-ACC-4', 'ti', 't1', 'Alto', 'Implementar y revisar controles compensatorios', 'TI-P2', 2],
+    ['R-CAM-1', 'ti', 't2', 'Medio', 'Ampliar el alcance normativo de cambios', 'TI-P3', 3],
+    ['R-CAM-2', 'ti', 't2', 'Medio', 'Formalizar la política de segregación de ambientes', 'TI-P3', 3],
+    ['R-CAM-3', 'ti', 't2', 'Alto', 'Fortalecer el monitoreo de cambios de emergencia', 'TI-P4', 3],
+    ['R-OPE-1', 'ti', 't3', 'Alto', 'Fortalecer el monitoreo técnico-operativo de Jobs', 'TI-P5', 2],
+    ['R-OPE-2', 'ti', 't3', 'Alto', 'Actualizar el DRP', 'TI-P6', 1],
+    ['R-OPE-3', 'ti', 't3', 'Medio', 'Incluir análisis causa raíz de los incidentes', 'TI-P7', 3],
+    ['R-CIB-1', 'ti', 't4', 'Alto', 'Monitoreo de terceros críticos', 'TI-P8', 0],
+    ['R-CIB-2', 'ti', 't4', 'Alto', 'Plan estratégico formal de ciberseguridad', 'TI-P8', 1],
+    ['R-CIB-3', 'ti', 't4', 'Alto', 'Pruebas automatizadas para confirmar capacidad de seguridad', 'TI-P8', 0],
+    ['R-CIB-4', 'ti', 't4', 'Medio', 'Revisión y actualización de inventarios (IT/OT)', 'TI-P8', 0]
+  ];
+  var P = [
+    ['CI-P1', 'ci', 'P1', 'Políticas y Procedimientos', 'Implementar una metodología corporativa para la gestión estandarizada de políticas y procedimientos, con énfasis en Reporte Financiero.', '3 – 6 meses', 'qw', false, 'Metodología aprobada y evidencia validada. Plan cerrado en el corte del 16 oct.'],
+    ['CI-P2', 'ci', 'P2', 'Estructura Organizacional y Gestión del Talento', 'Fortalecer la estructura de supervisión del Control Interno, los MOF, los planes de sucesión y retención de talento, y la revisión periódica de la estructura organizacional.', '3 – 12 meses', 'pe', false, 'Se compartieron avances del plan de sucesión y de la estructura de Control Interno. Pendiente definir el alcance del MOF.'],
+    ['CI-P3', 'ci', 'P3', 'Gestión Integral de Riesgos y Estrategia', 'Alinear el despliegue del Plan Estratégico con objetivos, KPI y desempeño; actualizar la metodología de Gestión de Riesgos e implementar el Plan de Continuidad del Negocio.', '3 – 12 meses', 'pe', false, 'Metodología de riesgos validada. El Plan de Continuidad depende de la actualización del DRP (TI-P6).'],
+    ['CI-P4', 'ci', 'P4', 'Fortalecer la Documentación del Marco de Control Interno SOX', 'Fortalecer los ELC y formalizar el scoping SOX, los procesos relevantes, la documentación de controles, los MRC y la IPE utilizada en su ejecución.', '6 – 18 meses / continuo', 'pe', true, 'Memo de materialidad y scoping recibido; en revisión por el equipo.'],
+    ['CI-P5', 'ci', 'P5', 'Cultura de Control Interno', 'Implementar capacitación periódica en Control Interno y SOX y fortalecer la cultura de riesgos y controles en la ejecución de procesos y toma de decisiones.', '3 – 6 meses / continuo', 'pe', true, 'Se definió el temario del primer ciclo de capacitación.'],
+    ['CI-P6', 'ci', 'P6', 'Gestión de Observaciones, Denuncias y Remediación', 'Fortalecer la comunicación, el seguimiento y cierre de observaciones de auditoría y la trazabilidad integral de denuncias, investigaciones, medidas disciplinarias y cierre formal.', '3 – 6 meses / continuo', 'qw', false, 'Se recibió la matriz de seguimiento de observaciones; en revisión.'],
+    ['CI-P7', 'ci', 'P7', 'Comunicación Corporativa', 'Formalizar el protocolo y proceso de Comunicación a Reguladores y Terceros, definiendo responsables, niveles de revisión y aprobación, plazos y mecanismos de control.', '6 – 12 meses', 'qw', false, 'Protocolo de comunicación a reguladores validado. Procedimiento de comunicación externa en redacción.'],
+    ['CI-P8', 'ci', 'P8', 'Monitoreo del Control Interno', 'Fortalecer el monitoreo del Sistema de Control Interno mediante un entendimiento actualizado de su diseño y estado, y evaluaciones continuas y/o independientes.', '6 – 12 meses / continuo', 'pe', false, 'Sin avance reportado en este corte.'],
+    ['TI-P1', 'ti', 'P1', 'Redefinir el Modelo de Gobierno de TI y Ciberseguridad', 'Analizar la segregación interna de funciones de TI, establecer la segunda línea de defensa, implementar la metodología de riesgos y el comité de ciberseguridad.', '4 – 6 meses', 'pe', true, 'Comité de ciberseguridad instalado. Segunda línea y metodología de riesgos en curso.'],
+    ['TI-P2', 'ti', 'P2', 'Fortalecer la segregación de funciones', 'Independencia funcional de la revisión, actualización de matrices de autorización/SoD, coordinación con los Key User y definición de controles compensatorios.', '6 – 12 meses', 'pe', true, 'Limpieza de perfiles en curso; controles compensatorios enviados para revisión.'],
+    ['TI-P3', 'ti', 'P3', 'Fortalecer los procedimientos de Cambios a Programas', 'Ampliar el alcance normativo a infraestructura y datos, y formalizar la segregación de ambientes.', '1 – 2 meses', 'qw', false, 'Políticas actualizadas y evidencia validada.'],
+    ['TI-P4', 'ti', 'P4', 'Incrementar el monitoreo de cambios de emergencia', 'Mayor monitoreo de regularizaciones para cambios de emergencia en aplicaciones e infraestructura.', '1 – 2 meses', 'qw', false, 'Reporte de monitoreo de cambios de emergencia validado.'],
+    ['TI-P5', 'ti', 'P5', 'Revisar el monitoreo técnico-operativo de los jobs e interfaces críticos', 'Fortalecer el monitoreo de transferencia de información en interfaces y la ejecución correcta de jobs que impactan información productiva.', '1 – 2 meses', 'qw', false, 'Tablero de monitoreo de jobs recibido; en revisión.'],
+    ['TI-P6', 'ti', 'P6', 'Actualizar el DRP', 'Asegurar que la recuperación se ejecute contra procedimientos, infraestructura, organigrama y responsables actualizados.', '3 – 5 meses', 'pe', false, 'Levantamiento de procedimientos de recuperación iniciado.'],
+    ['TI-P7', 'ti', 'P7', 'Incluir el análisis de RCA de los incidentes', 'Incorporar un análisis de causa raíz formal que genere aprendizaje y evidencia de prevención de recurrencia.', '1 – 2 meses', 'qw', false, 'Procedimiento de RCA validado.'],
+    ['TI-P8', 'ti', 'P8', 'Fortalecimiento de la Postura actual de Ciberseguridad (IT/OT)', 'Diseñar un plan estratégico de ciberseguridad, revisar la madurez de los controles, fortalecer la cadena de suministro y actualizar inventarios IT/OT.', '6 – 12 meses', 'pe', false, 'Borrador del plan estratégico de ciberseguridad en elaboración.']
+  ];
+  var DET = {
+    'ACC-001': [['Flujogramas', 0], ['Narrativas', 0], ['Recorridos "Walkthrough"', 0], ['Matriz de Riesgos y Controles "RCM"', 0], ['Diseño de Controles "Test Scripts"', 0], ['Prueba de Controles – Efectividad', 1], ['Remediación en los casos que apliquen', 1], ['Seguimiento / Monitoreo y Mejora Continua', 1], ['Sensitive Access Transaction "SAT"', 1], ['Segregation of Duties "SOD"', 1], ['System Generated Report "SGR"', 1], ['Excel Inventory', 1], ['Acompañamiento 1 x 1', 0]],
+    'IC-002': [['Clasificación de Información Sensible', 0], ['Revisión de información expuesta a terceros', 0]]
+  };
+  var BY = 'Equipo Knowledge · ';
+  var INIT_FILES = {
+    'AC-001': [{ name: 'Metodologia_Politicas_Procedimientos_v1.pdf', meta: BY + '16 oct 2026' }, { name: 'Acta_aprobacion_Gerencia_General.pdf', meta: BY + '16 oct 2026' }],
+    'AC-002': [{ name: 'Matriz_seguimiento_observaciones_AI_AE.xlsx', meta: BY + '23 oct 2026' }],
+    'ER-002': [{ name: 'Metodologia_Gestion_Riesgos_2026.pdf', meta: BY + '9 oct 2026' }],
+    'ER-003': [{ name: 'Memo_materialidad_scoping_SOX.docx', meta: BY + '23 oct 2026' }],
+    'IC-001': [{ name: 'Protocolo_comunicacion_SEC_SMV.pdf', meta: BY + '2 oct 2026' }],
+    'R-GOB-1': [{ name: 'Analisis_SoD_interna_TI.xlsx', meta: BY + '9 oct 2026' }],
+    'R-GOB-4': [{ name: 'Acta_instalacion_Comite_Ciberseguridad.pdf', meta: BY + '16 oct 2026' }],
+    'R-ACC-4': [{ name: 'Controles_compensatorios_SAP_v2.xlsx', meta: BY + '23 oct 2026' }],
+    'R-CAM-1': [{ name: 'Politica_Gestion_Cambios_v3.pdf', meta: BY + '2 oct 2026' }],
+    'R-CAM-2': [{ name: 'Politica_Segregacion_Ambientes.pdf', meta: BY + '2 oct 2026' }],
+    'R-CAM-3': [{ name: 'Reporte_monitoreo_cambios_emergencia_sep.xlsx', meta: BY + '9 oct 2026' }],
+    'R-OPE-1': [{ name: 'Tablero_monitoreo_jobs_interfaces.pdf', meta: BY + '23 oct 2026' }],
+    'R-OPE-3': [{ name: 'Procedimiento_RCA_incidentes.pdf', meta: BY + '16 oct 2026' }]
+  };
+  var WEEKS = [['4 sep', 0], ['11 sep', 3], ['18 sep', 5], ['25 sep', 8], ['2 oct', 11], ['9 oct', 16], ['16 oct', 21]];
+
+  var RECS = R.map(function (a) {
+    return { code: a[0], diag: a[1], group: a[2], crit: a[3], title: a[4], plan: a[5], init: a[6],
+      detail: (DET[a[0]] || []).map(function (x) { return { t: x[0], sub: !!x[1] }; }) };
+  });
+  var PLANS = P.map(function (a) { return { id: a[0], diag: a[1], short: a[2], name: a[3], desc: a[4], effort: a[5], quad: a[6], prio: a[7], note: a[8] }; });
+  var GNAME = {};
+  GROUPS.ci.concat(GROUPS.ti).forEach(function (g) { GNAME[g.id] = g.name; });
+
+  function initStatus() {
+    var s = {};
+    RECS.forEach(function (r) { if (r.code !== 'ITGC') { s[r.code] = r.init; } });
+    return s;
+  }
+  function initFiles() { return JSON.parse(JSON.stringify(INIT_FILES)); }
+
+  /* ---------- Estado ---------- */
+  var state = { view: 'resumen', sub: 'plans', grp: null, plan: null, status: initStatus(), files: initFiles() };
+  function set(patch) { Object.assign(state, patch); render(); }
+
+  /* ---------- Utilidades ---------- */
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function pct(a, t) { return t ? Math.round(a / t * 100) : 0; }
+  function a(act, arg) { return 'data-act="' + act + '"' + (arg != null ? ' data-arg="' + esc(arg) + '"' : ''); }
+  var ICON = {
+    cal: '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+    close: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    file: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B2FD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',
+    up: '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>',
+    check: '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    info: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    back: '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>'
+  };
+
+  /* ---------- Cálculos ---------- */
+  function compute() {
+    var tiVals = RECS.filter(function (r) { return r.diag === 'ti'; }).map(function (r) { return state.status[r.code]; });
+    var itgc = tiVals.every(function (v) { return v === 3; }) ? 3 : (tiVals.some(function (v) { return v > 0; }) ? 1 : 0);
+    var recs = RECS.map(function (r) {
+      var st = r.code === 'ITGC' ? itgc : state.status[r.code];
+      return Object.assign({}, r, { st: st, t: ST[st] });
+    });
+    var plans = PLANS.map(function (p) {
+      var rs = recs.filter(function (r) { return r.plan === p.id; });
+      var cov = rs.filter(function (r) { return r.st === 3; }).length;
+      var any = rs.some(function (r) { return r.st > 0; });
+      var closed = cov === rs.length;
+      return Object.assign({}, p, { recs: rs, cov: cov, tot: rs.length, closed: closed, any: any,
+        stateLabel: closed ? 'Cerrado' : (any ? 'En curso' : 'No iniciado'), sc: closed ? ST[3] : (any ? ST[1] : ST[0]) });
+    });
+    function diag(d) {
+      var rs = recs.filter(function (r) { return r.diag === d; });
+      var counts = [0, 0, 0, 0];
+      rs.forEach(function (r) { counts[r.st] += 1; });
+      var ps = plans.filter(function (x) { return x.diag === d; });
+      var isCI = d === 'ci';
+      return {
+        key: d, recs: rs, counts: counts, plans: ps,
+        closed: ps.filter(function (x) { return x.closed; }).length,
+        pct: pct(counts[3], rs.length),
+        eyebrow: isCI ? 'Diagnóstico 1 · Marco COSO' : 'Diagnóstico 2 · ITGC y Ciberseguridad',
+        title: isCI ? 'Control Interno' : 'Tecnología de la Información',
+        full: isCI ? 'Diagnóstico de Control Interno' : 'Diagnóstico de Tecnología de la Información',
+        groupWord: isCI ? 'componente' : 'proceso',
+        note: isCI
+          ? 'Son 20 recomendaciones: los 8 planes cubren 19. La recomendación ITGC (Componente 3) no tiene plan propio porque se resuelve con los planes del diagnóstico de TI; su avance se calcula desde ahí.'
+          : 'Son 18 recomendaciones y los 8 planes las cubren todas.',
+        cols: GROUPS[d].map(function (g) {
+          var gr = rs.filter(function (r) { return r.group === g.id; });
+          return { g: g, recs: gr, cov: gr.filter(function (r) { return r.st === 3; }).length };
+        })
+      };
+    }
+    return { recs: recs, plans: plans, ci: diag('ci'), ti: diag('ti') };
+  }
+
+  /* ---------- Piezas de UI ---------- */
+  function chip(t) { return '<span class="chip" style="background:' + t.bg + ';color:' + t.fg + '"><span class="dot" style="background:' + t.dot + '"></span>' + t.label + '</span>'; }
+  function crit(c) {
+    var alto = c === 'Alto';
+    return '<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:' + (alto ? '#9D1F8C' : '#F6DDF1') + ';color:' + (alto ? '#fff' : '#7A1670') + '">' + c + '</span>';
+  }
+  function track(p, h) { return '<div class="track" style="height:' + (h || 8) + 'px"><span style="width:' + p + '%"></span></div>'; }
+  function stackBar(d) {
+    return '<div class="stack">' + [3, 2, 1, 0].filter(function (o) { return d.counts[o] > 0; }).map(function (o) {
+      return '<span style="width:' + (d.counts[o] / d.recs.length * 100).toFixed(2) + '%;background:' + ST[o].bar + '"></span>';
+    }).join('') + '</div>';
+  }
+  function legend(d, inline) {
+    return [3, 2, 1, 0].map(function (o) {
+      return inline
+        ? '<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2)"><span class="sq" style="background:' + ST[o].bar + '"></span>' + ST[o].long + ' · <strong>' + d.counts[o] + '</strong></span>'
+        : '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)"><span class="sq" style="background:' + ST[o].bar + '"></span><span style="flex-grow:1">' + ST[o].long + '</span><strong>' + d.counts[o] + '</strong></div>';
+    }).join('');
+  }
+  function cardBorder(r) { return r.st === 3 ? '#A7DCD7' : 'var(--line)'; }
+  function cardBg(r) { return r.st === 3 ? '#F3FBFA' : '#fff'; }
+
+  function kpi(label, value, color, sub, extra) {
+    return '<div class="card" style="padding:20px;display:flex;flex-direction:column;gap:10px">' +
+      '<span class="eyebrow">' + label + '</span>' +
+      '<span style="font-size:44px;font-weight:700;line-height:1;color:' + color + '">' + value + '</span>' +
+      (extra || '') + '<span class="muted" style="font-size:12px;line-height:1.45">' + sub + '</span></div>';
+  }
+
+  function viewResumen(c) {
+    var total = c.recs.length;
+    var covered = c.recs.filter(function (r) { return r.st === 3; }).length;
+    var gp = pct(covered, total);
+    var altoAll = c.recs.filter(function (r) { return r.crit === 'Alto'; });
+    var altoPend = altoAll.filter(function (r) { return r.st !== 3; }).length;
+    var rev = c.recs.filter(function (r) { return r.st === 2; }).length;
+
+    var wk = WEEKS.map(function (w) { return { lbl: w[0], v: w[1], cur: false }; }).concat([{ lbl: 'Actual', v: gp, cur: true }]);
+    var maxV = Math.max.apply(null, wk.map(function (w) { return w.v; }));
+    var tmax = Math.max(40, Math.ceil(maxV / 10) * 10 + 10);
+
+    var h = '<div style="display:flex;flex-direction:column;gap:24px">';
+    h += '<div class="grid-auto" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">';
+    h += kpi('Cumplimiento global', gp + '%', 'var(--purple-d)', covered + ' de ' + total + ' recomendaciones cubiertas con evidencia validada', track(gp));
+    h += kpi('Planes cerrados', (c.ci.closed + c.ti.closed) + ' / ' + c.plans.length, 'var(--teal)', 'Control Interno: ' + c.ci.closed + ' de 8 · TI: ' + c.ti.closed + ' de 8. Un plan se cierra cuando todas sus recomendaciones están cubiertas.');
+    h += kpi('Criticidad alta pendiente', altoPend, 'var(--magenta)', 'de ' + altoAll.length + ' recomendaciones de criticidad Alta aún sin cubrir');
+    h += kpi('Evidencias por validar', rev, 'var(--purple)', 'Cargadas por el equipo y pendientes de validación antes de contar como cubiertas.');
+    h += '</div>';
+
+    h += '<div class="grid-auto" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr))">';
+    [c.ci, c.ti].forEach(function (d) {
+      h += '<div class="card" style="padding:24px;display:flex;flex-direction:column;gap:16px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="display:flex;flex-direction:column;gap:4px"><span class="eyebrow teal">' + d.eyebrow + '</span><span style="font-size:20px;font-weight:700">' + d.title + '</span></div>' +
+        '<span style="font-size:32px;font-weight:700;color:var(--purple-d);line-height:1">' + d.pct + '%</span></div>' +
+        stackBar(d) +
+        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px">' + legend(d) + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--line2)">' +
+        '<span class="muted" style="font-size:12px">' + d.counts[3] + ' de ' + d.recs.length + ' recomendaciones cubiertas · ' + d.closed + ' de ' + d.plans.length + ' planes cerrados</span>' +
+        '<button type="button" class="btn primary" ' + a('view', d.key) + '>Ver detalle</button></div></div>';
+    });
+    h += '</div>';
+
+    h += '<div style="display:flex;flex-wrap:wrap;gap:16px">';
+    h += '<div class="card" style="flex:1 1 420px;min-width:0;padding:24px;display:flex;flex-direction:column;gap:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><span style="font-size:16px;font-weight:700">Tendencia semanal de cumplimiento</span><span class="muted" style="font-size:11px">Escala 0–' + tmax + '% · cortes de los viernes</span></div>' +
+      '<div style="display:flex;align-items:flex-end;gap:10px;height:210px;border-bottom:1px solid var(--line)">' +
+      wk.map(function (w) {
+        return '<div style="flex:1 1 0;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px">' +
+          '<span style="font-size:11px;font-weight:700;color:' + (w.cur ? 'var(--purple-d)' : 'var(--muted)') + '">' + w.v + '%</span>' +
+          '<div style="width:100%;max-width:44px;height:' + Math.max(4, Math.round(w.v / tmax * 170)) + 'px;background:' + (w.cur ? 'var(--purple)' : '#CDBDF4') + ';border-radius:8px 8px 0 0"></div></div>';
+      }).join('') + '</div>' +
+      '<div style="display:flex;gap:10px">' + wk.map(function (w) { return '<span class="muted" style="flex:1 1 0;min-width:0;text-align:center;font-size:11px">' + w.lbl + '</span>'; }).join('') + '</div>' +
+      '<span class="muted" style="font-size:12px;line-height:1.5">Cada barra es la foto que se guarda al cerrar el corte semanal. La barra morada es el estado actual.</span></div>';
+
+    h += '<div class="card" style="flex:1 1 420px;min-width:0;padding:24px;display:flex;flex-direction:column;gap:16px"><span style="font-size:16px;font-weight:700">Avance por componente y proceso</span>';
+    [c.ci, c.ti].forEach(function (d) {
+      h += '<div style="display:flex;flex-direction:column;gap:10px"><span class="eyebrow teal">' + d.title + '</span>' +
+        d.cols.map(function (col) {
+          return '<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) 40px;align-items:center;gap:12px">' +
+            '<span style="font-size:12.5px;font-weight:600;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + col.g.name + '</span>' +
+            track(pct(col.cov, col.recs.length)) +
+            '<span style="font-size:12px;font-weight:700;text-align:right">' + col.cov + '/' + col.recs.length + '</span></div>';
+        }).join('') + '</div>';
+    });
+    h += '</div></div></div>';
+    return h;
+  }
+
+  function bubble(p) {
+    var bg = p.closed ? 'var(--teal)' : '#fff';
+    var fg = p.closed ? '#fff' : (p.quad === 'qw' ? 'var(--purple-d)' : 'var(--teal-d)');
+    var bd = p.closed ? 'var(--teal)' : (p.any ? '#D99A06' : '#BDB8CC');
+    var ol = p.prio ? '2px dashed #D1366B' : '2px solid transparent';
+    return '<button type="button" ' + a('plan', p.id) + ' aria-label="' + esc(p.id + ' ' + p.name) + '" style="width:52px;height:52px;border-radius:50%;background:' + bg + ';color:' + fg + ';border:3px solid ' + bd + ';outline:' + ol + ';outline-offset:3px;font-weight:700;font-size:14px;cursor:pointer">' + p.short + '</button>';
+  }
+
+  function viewDiagPlans(d) {
+    var h = '<div style="display:flex;flex-direction:column;gap:24px">';
+    h += '<div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">' +
+      '<h3 style="font-size:17px;font-weight:700">Avance por ' + d.groupWord + '</h3>' +
+      '<button type="button" class="btn outline" ' + a('recs', '') + '>Ver todas las recomendaciones (' + d.recs.length + ')</button></div>' +
+      '<div class="grid-auto" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">' +
+      d.cols.map(function (col) {
+        return '<button type="button" ' + a('recs', col.g.id) + ' class="card" style="display:flex;flex-direction:column;gap:10px;width:100%;text-align:left;padding:16px;cursor:pointer;border-radius:14px">' +
+          '<span class="eyebrow" style="color:var(--purple)">' + col.g.n + '</span>' +
+          '<span style="font-size:14px;font-weight:700;line-height:1.3;min-height:36px">' + col.g.name + '</span>' +
+          '<span style="display:flex;align-items:baseline;gap:6px"><span style="font-size:24px;font-weight:700;color:var(--teal)">' + col.cov + '/' + col.recs.length + '</span><span class="muted" style="font-size:12px">cubiertas</span></span>' +
+          '<span style="display:block;width:100%">' + track(pct(col.cov, col.recs.length), 6) + '</span>' +
+          '<span style="display:flex;flex-wrap:wrap;gap:4px">' + col.recs.map(function (r) { return '<span class="sq" style="background:' + r.t.dot + '"></span>'; }).join('') + '</span>' +
+          '<span style="font-size:12px;font-weight:600;color:var(--purple-d)">Ver recomendaciones</span></button>';
+      }).join('') + '</div></div>';
+
+    h += '<div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-radius:12px;background:#F3EEFD;color:var(--purple-dd);font-size:13px;line-height:1.5">' + ICON.info + '<span>' + d.note + '</span></div>';
+
+    h += '<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">';
+    h += '<div style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:12px"><h3 style="font-size:17px;font-weight:700">Planes de acción</h3>' +
+      d.plans.map(function (p) {
+        return '<button type="button" ' + a('plan', p.id) + ' class="card" style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;width:100%;text-align:left;padding:16px;border-radius:14px;cursor:pointer">' +
+          '<span style="width:44px;height:44px;border-radius:50%;background:' + (p.quad === 'qw' ? 'var(--purple)' : 'var(--teal)') + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0">' + p.short + '</span>' +
+          '<span style="flex:999 1 260px;min-width:0;display:flex;flex-direction:column;gap:6px">' +
+          '<span style="font-size:14px;font-weight:700;line-height:1.35">' + p.name + '</span>' +
+          '<span class="muted" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12px"><span>' + p.id + ' · ' + (p.quad === 'qw' ? 'Quick win' : 'Proyecto estratégico') + ' · ' + p.effort + '</span>' +
+          (p.prio ? '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#FCE4EC;color:#A3204F">Prioritario</span>' : '') + '</span>' +
+          '<span style="display:flex;flex-wrap:wrap;gap:6px">' + p.recs.map(function (r) {
+            return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--bg);color:var(--ink2)"><span class="dot" style="background:' + r.t.dot + '"></span>' + r.code + '</span>';
+          }).join('') + '</span></span>' +
+          '<span style="flex:1 1 170px;min-width:150px;display:flex;flex-direction:column;gap:8px">' +
+          '<span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="muted" style="font-size:12px;font-weight:600">' + p.cov + '/' + p.tot + ' cubiertas</span>' +
+          '<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:' + p.sc.bg + ';color:' + p.sc.fg + '">' + p.stateLabel + '</span></span>' +
+          '<span style="display:block">' + track(pct(p.cov, p.tot)) + '</span></span></button>';
+      }).join('') + '</div>';
+
+    var qw = d.plans.filter(function (x) { return x.quad === 'qw'; });
+    var pe = d.plans.filter(function (x) { return x.quad === 'pe'; });
+    h += '<div class="card" style="flex:1 1 320px;min-width:0;padding:20px;display:flex;flex-direction:column;gap:14px">' +
+      '<span style="font-size:16px;font-weight:700">Matriz de priorización</span>' +
+      '<span class="muted" style="font-size:12px;line-height:1.5">Misma ubicación que en las láminas, pintada con el avance actual.</span>' +
+      '<div style="background:#F3EEFD;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px"><span style="font-size:13px;font-weight:700;color:var(--purple-d)">Quick wins</span><span class="muted" style="font-size:11px">Alto impacto · baja complejidad</span><div style="display:flex;flex-wrap:wrap;gap:12px;padding:4px">' + qw.map(bubble).join('') + '</div></div>' +
+      '<div style="background:#E6F4F3;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px"><span style="font-size:13px;font-weight:700;color:var(--teal-d)">Proyectos estratégicos</span><span class="muted" style="font-size:11px">Alto impacto · alta complejidad</span><div style="display:flex;flex-wrap:wrap;gap:12px;padding:4px">' + pe.map(bubble).join('') + '</div></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:11.5px;color:var(--ink2)">' +
+      '<span style="display:inline-flex;align-items:center;gap:8px"><span style="width:14px;height:14px;border-radius:50%;background:var(--teal)"></span>Cerrado</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;border:3px solid #D99A06"></span>En curso</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;border:3px solid #BDB8CC"></span>No iniciado</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;border:2px dashed #D1366B"></span>Prioritario</span>' +
+      '</div></div></div></div>';
+    return h;
+  }
+
+  function viewDiagRecs(d) {
+    var grp = state.grp;
+    var count = d.recs.filter(function (r) { return !grp || r.group === grp; }).length;
+    var h = '<div style="display:flex;flex-direction:column;gap:16px">';
+    h += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px"><button type="button" class="btn ghost" ' + a('back') + '>' + ICON.back + 'Volver al resumen</button>' +
+      '<h3 style="font-size:17px;font-weight:700;flex-grow:1">Recomendaciones de ' + d.title + (grp ? ' · ' + GNAME[grp] : '') + ' (' + count + ')</h3></div>';
+    var chips = [{ id: '', label: 'Todas', n: d.recs.length }].concat(GROUPS[d.key].map(function (g) {
+      return { id: g.id, label: g.name, n: d.recs.filter(function (r) { return r.group === g.id; }).length };
+    }));
+    h += '<div role="group" aria-label="Filtrar recomendaciones" style="display:flex;flex-wrap:wrap;gap:8px">' + chips.map(function (c) {
+      var on = (grp || '') === c.id;
+      return '<button type="button" ' + a('grp', c.id) + ' aria-pressed="' + on + '" style="min-height:40px;padding:0 14px;border-radius:999px;border:1px solid ' + (on ? 'var(--purple)' : '#D9D3E8') + ';background:' + (on ? 'var(--purple)' : '#fff') + ';color:' + (on ? '#fff' : 'var(--purple-dd)') + ';font-size:12.5px;font-weight:600;cursor:pointer">' + c.label + ' · ' + c.n + '</button>';
+    }).join('') + '</div>';
+    h += '<span class="muted" style="font-size:12.5px">Misma distribución que en la lámina presentada. Haz clic en una recomendación para abrir su plan de acción.</span>';
+    h += '<div class="card" style="padding:18px"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;align-items:start">';
+    d.cols.filter(function (col) { return !grp || col.g.id === grp; }).forEach(function (col) {
+      h += '<div style="display:flex;flex-direction:column;gap:10px">' +
+        '<div style="background:var(--purple);color:#fff;border-radius:10px;padding:10px 14px 14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:11.5px;font-weight:500;color:#E9E2FB">' + col.g.n + '</span><span style="font-size:16px;font-weight:700;line-height:1.25">' + col.g.name + '</span></div>' +
+        col.recs.map(function (r) {
+          var alto = r.crit === 'Alto';
+          return '<button type="button" ' + a('rec', r.code) + ' style="display:flex;flex-direction:column;width:100%;padding:0;text-align:left;border:1px solid ' + cardBorder(r) + ';border-radius:8px;overflow:hidden;background:' + cardBg(r) + ';cursor:pointer">' +
+            '<span style="display:block;width:100%;padding:7px 10px;text-align:center;font-size:12.5px;font-weight:700;background:' + (alto ? '#9D1F8C' : '#F6DDF1') + ';color:' + (alto ? '#fff' : '#7A1670') + '">' + r.code + ' · ' + r.crit + '</span>' +
+            '<span style="display:flex;flex-direction:column;gap:8px;padding:10px 12px 12px">' +
+            '<span style="font-size:12.5px;line-height:1.45;color:#2A2340">' + r.title + '</span>' +
+            (r.detail.length ? '<span style="display:flex;flex-direction:column;gap:3px">' + r.detail.map(function (x) {
+              return '<span style="font-size:11.5px;line-height:1.4;color:#4A4460;padding-left:' + (x.sub ? '16px' : '0') + '">' + (x.sub ? '◦ ' : '– ') + esc(x.t) + '</span>';
+            }).join('') + '</span>' : '') +
+            '<span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">' + chip(r.t) + '<span class="muted" style="font-size:11px;font-weight:500">' + (r.plan || 'Vía diagnóstico TI') + '</span></span>' +
+            '</span></button>';
+        }).join('') + '</div>';
+    });
+    h += '</div></div></div>';
+    return h;
+  }
+
+  function viewDiag(d) {
+    var h = '<div style="display:flex;flex-direction:column;gap:24px">';
+    h += '<div class="card" style="padding:24px;display:flex;flex-wrap:wrap;align-items:center;gap:24px">' +
+      '<div style="flex:1 1 320px;display:flex;flex-direction:column;gap:6px"><span class="eyebrow teal">' + d.eyebrow + '</span><h2 style="font-size:22px;font-weight:700">' + d.full + '</h2>' +
+      '<span class="muted" style="font-size:13px">' + d.counts[3] + ' de ' + d.recs.length + ' recomendaciones cubiertas · ' + d.closed + ' de ' + d.plans.length + ' planes cerrados</span></div>' +
+      '<div style="flex:1 1 360px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;align-items:center;gap:12px"><div style="flex-grow:1">' + stackBar(d) + '</div><span style="font-size:24px;font-weight:700;color:var(--purple-d)">' + d.pct + '%</span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px 16px">' + legend(d, true) + '</div></div></div>';
+    h += state.sub === 'recs' ? viewDiagRecs(d) : viewDiagPlans(d);
+    h += '</div>';
+    return h;
+  }
+
+  function viewDrawer(c) {
+    var p = c.plans.filter(function (x) { return x.id === state.plan; })[0];
+    if (!p) { return ''; }
+    var head = p.quad === 'qw' ? 'var(--purple)' : 'var(--teal)';
+    var h = '<div style="position:fixed;inset:0;z-index:50;display:flex;background:rgba(30,20,51,.45)">' +
+      '<button type="button" aria-label="Cerrar detalle" ' + a('close') + ' style="flex:1 1 0;min-width:0;padding:0;border:0;background:transparent;cursor:pointer"></button>' +
+      '<aside role="dialog" aria-modal="true" aria-label="Detalle del plan de acción" style="width:100%;max-width:520px;height:100%;overflow-y:auto;background:#fff;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(30,20,51,.18)">' +
+      '<div style="background:' + head + ';color:#fff;padding:22px 24px 24px;display:flex;flex-direction:column;gap:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">' + p.id + ' · ' + (p.diag === 'ci' ? 'Control Interno' : 'Tecnología de la Información') + '</span>' +
+      '<button type="button" aria-label="Cerrar" ' + a('close') + ' id="drawer-close" style="width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center">' + ICON.close + '</button></div>' +
+      '<h2 style="font-size:22px;font-weight:700;line-height:1.25">' + p.name + '</h2>' +
+      '<p style="margin:0;font-size:13px;line-height:1.55">' + p.desc + '</p>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px"><span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.18)">' + (p.quad === 'qw' ? 'Quick win' : 'Proyecto estratégico') + '</span>' +
+      '<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.18)">Esfuerzo: ' + p.effort + '</span>' +
+      (p.prio ? '<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:#fff;color:#A3204F">Prioritario</span>' : '') + '</div></div>';
+    h += '<div style="padding:24px;display:flex;flex-direction:column;gap:20px">' +
+      '<div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span style="font-size:14px;font-weight:700">' + p.cov + '/' + p.tot + ' recomendaciones cubiertas</span>' +
+      '<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:' + p.sc.bg + ';color:' + p.sc.fg + '">' + p.stateLabel + '</span></div>' + track(pct(p.cov, p.tot), 10) + '</div>' +
+      '<span class="eyebrow">Recomendaciones del plan</span>';
+    p.recs.forEach(function (r) {
+      var fl = state.files[r.code] || [];
+      h += '<div style="border:1px solid ' + cardBorder(r) + ';background:' + cardBg(r) + ';border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">' +
+        '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><span style="font-size:14px;font-weight:700">' + r.code + '</span>' + crit(r.crit) + '<span style="flex-grow:1"></span>' + chip(r.t) + '</div>' +
+        '<span style="font-size:13px;line-height:1.45;color:var(--ink2)">' + r.title + '</span>';
+      if (fl.length) {
+        h += '<div style="display:flex;flex-direction:column;gap:6px">' + fl.map(function (f) {
+          return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg)">' + ICON.file +
+            '<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:12.5px;font-weight:600;word-break:break-all">' + esc(f.name) + '</span><span class="muted" style="font-size:11px">' + esc(f.meta) + '</span></div></div>';
+        }).join('') + '</div>';
+      } else {
+        h += '<span class="muted" style="font-size:12px">Aún no hay evidencia cargada.</span>';
+      }
+      h += '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+      if (r.st < 2) { h += '<button type="button" class="btn primary" ' + a('upload', r.code) + '>' + ICON.up + 'Subir evidencia</button>'; }
+      if (r.st === 2) { h += '<button type="button" class="btn teal" ' + a('validate', r.code) + '>' + ICON.check + 'Validar y marcar como cubierta</button><button type="button" class="btn ghost" ' + a('devolver', r.code) + '>Devolver</button>'; }
+      if (r.st === 3) { h += '<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--teal-d)">' + ICON.check + 'Evidencia validada: cuenta para el cumplimiento</span>'; }
+      h += '</div></div>';
+    });
+    h += '<div style="background:var(--bg);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px"><span class="eyebrow">Nota del último corte</span><span style="font-size:13px;line-height:1.5;color:var(--ink2)">' + p.note + '</span></div>' +
+      '<span class="muted" style="font-size:12px;line-height:1.5">Regla: una recomendación solo pasa a "Cubierta" si tiene al menos una evidencia cargada y validada por el equipo Knowledge.</span>' +
+      '</div></aside></div>';
+    return h;
+  }
+
+  /* ---------- Render ---------- */
+  var app = document.getElementById('app');
+  var lastPlan = null;
+
+  function render() {
+    var c = compute();
+    var tabs = [['resumen', 'Resumen'], ['ci', 'Control Interno · 20'], ['ti', 'Tecnología de la Información · 18']];
+    var h = '';
+    h += '<header style="background:#fff;border-bottom:1px solid var(--line)"><div class="wrap" style="padding-top:14px;padding-bottom:14px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">' +
+      '<div style="display:flex;align-items:center;gap:12px;flex-grow:1"><img src="logo.png" alt="Knowledge Consulting" style="height:42px;width:auto;display:block">' +
+      '<span aria-hidden="true" style="width:1px;height:32px;background:var(--line)"></span><span class="muted" style="font-size:12.5px;line-height:1.35">Seguimiento de recomendaciones<br>Uso interno</span></div>' +
+      '<span style="font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;background:#FFF3D6;color:#7A4F00">POC · Datos de ejemplo</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;background:#E6F4F3;color:var(--teal-d)">' + ICON.cal + 'Último corte: vie 23 oct 2026</span>' +
+      '<button type="button" class="btn ghost" ' + a('reset') + ' style="font-size:12px">Restablecer demo</button></div></header>';
+    h += '<section style="background:var(--purple-dd);color:#fff"><div class="wrap" style="padding-top:32px;padding-bottom:24px;display:flex;flex-direction:column;gap:14px">' +
+      '<span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7FE0D9">Cliente minero · Proyecto SOX</span>' +
+      '<h1 style="font-size:30px;line-height:1.2;font-weight:700">Seguimiento de recomendaciones y planes de acción</h1>' +
+      '<p style="margin:0;font-size:14px;line-height:1.5;max-width:760px;color:#E9E2FB">Fortalecimiento Integral SOX · Fase 0 y 1. Una recomendación cuenta como cubierta cuando su evidencia fue cargada y validada por el equipo.</p>' +
+      '<nav aria-label="Vistas" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">' + tabs.map(function (t) {
+        var on = state.view === t[0];
+        return '<button type="button" ' + a('view', t[0]) + (on ? ' aria-current="page"' : '') + ' style="min-height:44px;padding:0 18px;border-radius:999px;border:1px solid ' + (on ? '#fff' : 'rgba(255,255,255,.45)') + ';background:' + (on ? '#fff' : 'transparent') + ';color:' + (on ? 'var(--purple-dd)' : '#fff') + ';font-size:13px;font-weight:700;cursor:pointer">' + t[1] + '</button>';
+      }).join('') + '</nav></div></section>';
+    h += '<main class="wrap" style="padding-top:28px;padding-bottom:48px;display:flex;flex-direction:column;gap:24px">';
+    if (state.view === 'resumen') { h += viewResumen(c); }
+    else { h += viewDiag(state.view === 'ti' ? c.ti : c.ci); }
+    h += '<p class="muted" style="margin:8px 0 0;font-size:12px;line-height:1.5">POC con estados y evidencias de ejemplo. Las recomendaciones se muestran con el título de las láminas; la redacción formal se incorporará en la versión final. Los planes usan códigos únicos por diagnóstico (CI-P1 a CI-P8 y TI-P1 a TI-P8).</p>';
+    h += '</main>';
+    if (state.plan) { h += viewDrawer(c); }
+    app.innerHTML = h;
+    document.body.style.overflow = state.plan ? 'hidden' : '';
+    if (state.plan && state.plan !== lastPlan) {
+      var btn = document.getElementById('drawer-close');
+      if (btn) { btn.focus(); }
+    }
+    lastPlan = state.plan;
+  }
+
+  /* ---------- Acciones ---------- */
+  var ACTIONS = {
+    view: function (v) { set({ view: v, sub: 'plans', grp: null, plan: null }); window.scrollTo(0, 0); },
+    recs: function (g) { set({ sub: 'recs', grp: g || null }); window.scrollTo(0, 0); },
+    back: function () { set({ sub: 'plans', grp: null }); },
+    grp: function (g) { set({ grp: g || null }); },
+    plan: function (id) { set({ plan: id }); },
+    rec: function (code) {
+      var r = RECS.filter(function (x) { return x.code === code; })[0];
+      if (r && r.plan) { set({ plan: r.plan }); } else { set({ view: 'ti', sub: 'plans', grp: null, plan: null }); window.scrollTo(0, 0); }
+    },
+    close: function () { set({ plan: null }); },
+    upload: function (code) {
+      var files = Object.assign({}, state.files);
+      files[code] = (files[code] || []).concat([{ name: 'Evidencia_' + code + '_demo.pdf', meta: 'Equipo Knowledge · ' + new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · pendiente de validar' }]);
+      var status = Object.assign({}, state.status); status[code] = 2;
+      set({ files: files, status: status });
+    },
+    validate: function (code) {
+      if (!(state.files[code] || []).length) { return; }
+      var status = Object.assign({}, state.status); status[code] = 3;
+      set({ status: status });
+    },
+    devolver: function (code) { var status = Object.assign({}, state.status); status[code] = 1; set({ status: status }); },
+    reset: function () { set({ status: initStatus(), files: initFiles(), plan: null }); }
+  };
+  app.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) { return; }
+    var fn = ACTIONS[el.getAttribute('data-act')];
+    if (fn) { fn(el.getAttribute('data-arg')); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.plan) { set({ plan: null }); } });
+
+  render();
+})();
+</script>
+</body>
+</html>
