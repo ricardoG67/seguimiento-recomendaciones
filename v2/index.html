@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seguimiento de Recomendaciones</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: consola ejecutiva — sidebar fijo oscuro + lienzo claro; resumen arriba, detalle abajo */
+:root{
+  --bg:#F2F4F8; --surface:#FFFFFF; --surface-2:#F7F8FB; --line:#E2E6EE; --line-2:#ECEFF5;
+  --ink:#121A2C; --ink-2:#39435A; --muted:#677189;
+  --accent:#2A4FD0; --accent-ink:#FFFFFF; --accent-soft:#E7ECFC; --accent-strong:#1D3AA6;
+  --ti:#0D8481; --ti-soft:#DDF2F1;
+  --side:#0F1729; --side-2:#18223A; --side-ink:#AEB8CE; --side-hi:#FFFFFF; --side-line:#222D48;
+  --crit:#B92E55; --crit-soft:#FBE5EC; --warn:#A86A00; --warn-soft:#FFF1D6;
+  --s0:#C3C9D5; --s1:#E0A12B; --s2:#7C66D9; --s3:#1F8A5B;
+  --s0-bg:#EEF0F4; --s0-fg:#4D566B; --s1-bg:#FFF2D8; --s1-fg:#7A4E00; --s2-bg:#EEEAFC; --s2-fg:#4E37B0; --s3-bg:#DFF3E9; --s3-fg:#11663F;
+  --lvA-bg:#FBE5EC; --lvA-fg:#8E1F42; --lvM-bg:#FFF2D8; --lvM-fg:#7A4E00; --lvB-bg:#E3F2EC; --lvB-fg:#1A6646;
+  --shadow:0 1px 2px rgba(16,24,44,.05),0 4px 14px rgba(16,24,44,.04);
+  --scrim:rgba(10,15,28,.5);
+  --f-display:'Montserrat',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-body:'Montserrat',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1020; --surface:#131A2B; --surface-2:#182033; --line:#252F47; --line-2:#1E273C;
+  --ink:#E7EBF4; --ink-2:#B9C2D6; --muted:#8C96AD;
+  --accent:#7590FF; --accent-ink:#0B1020; --accent-soft:#1D2852; --accent-strong:#9AAEFF;
+  --ti:#3FC1BC; --ti-soft:#10302F;
+  --side:#080C18; --side-2:#131B2E; --side-ink:#97A2BA; --side-hi:#FFFFFF; --side-line:#1B2439;
+  --crit:#F0708F; --crit-soft:#3A1824; --warn:#E8AF45; --warn-soft:#352812;
+  --s0:#465068; --s1:#E3A73A; --s2:#9383EE; --s3:#3DB57D;
+  --s0-bg:#222A3E; --s0-fg:#B3BBCE; --s1-bg:#36290F; --s1-fg:#F1C46E; --s2-bg:#2A2450; --s2-fg:#C3B8FF; --s3-bg:#123425; --s3-fg:#7FDCAE;
+  --lvA-bg:#3A1824; --lvA-fg:#F4A3B8; --lvM-bg:#36290F; --lvM-fg:#F1C46E; --lvB-bg:#123425; --lvB-fg:#7FDCAE;
+  --shadow:0 1px 2px rgba(0,0,0,.3); --scrim:rgba(0,0,0,.6); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0B1020; --surface:#131A2B; --surface-2:#182033; --line:#252F47; --line-2:#1E273C;
+  --ink:#E7EBF4; --ink-2:#B9C2D6; --muted:#8C96AD;
+  --accent:#7590FF; --accent-ink:#0B1020; --accent-soft:#1D2852; --accent-strong:#9AAEFF;
+  --ti:#3FC1BC; --ti-soft:#10302F;
+  --side:#080C18; --side-2:#131B2E; --side-ink:#97A2BA; --side-hi:#FFFFFF; --side-line:#1B2439;
+  --crit:#F0708F; --crit-soft:#3A1824; --warn:#E8AF45; --warn-soft:#352812;
+  --s0:#465068; --s1:#E3A73A; --s2:#9383EE; --s3:#3DB57D;
+  --s0-bg:#222A3E; --s0-fg:#B3BBCE; --s1-bg:#36290F; --s1-fg:#F1C46E; --s2-bg:#2A2450; --s2-fg:#C3B8FF; --s3-bg:#123425; --s3-fg:#7FDCAE;
+  --lvA-bg:#3A1824; --lvA-fg:#F4A3B8; --lvM-bg:#36290F; --lvM-fg:#F1C46E; --lvB-bg:#123425; --lvB-fg:#7FDCAE;
+  --shadow:0 1px 2px rgba(0,0,0,.3); --scrim:rgba(0,0,0,.6); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--side)}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;letter-spacing:-.01em}
+.mono{font-family:var(--f-mono);font-size:.92em;letter-spacing:0}
+.muted{color:var(--muted)}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+
+/* Shell */
+.shell{display:grid;grid-template-columns:252px minmax(0,1fr);min-height:100vh}
+.side{background:var(--side);color:var(--side-ink);position:sticky;top:env(safe-area-inset-top,0px);height:100vh;display:flex;flex-direction:column;gap:22px;padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:16px;overflow-y:auto}
+.brand{display:flex;flex-direction:column;gap:12px}
+.brand-logo{background:#FFFFFF;border-radius:10px;padding:9px 12px;display:flex;align-items:center}
+.brand-logo img{height:26px;width:auto;display:block}
+.brand-proj{display:flex;flex-direction:column;gap:2px;padding:0 4px}
+.brand-proj b{color:var(--side-hi);font-size:13px;font-weight:700}
+.brand-proj span{font-size:11.5px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav-lbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:10px 10px 6px;color:#6E7A95}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--side-ink);font-size:13px;font-weight:600;text-align:left}
+.nav button:hover{background:var(--side-2);color:var(--side-hi)}
+.nav button[aria-current="page"]{background:var(--side-2);color:var(--side-hi);box-shadow:inset 2px 0 0 var(--accent)}
+.nav button .n{margin-left:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--side-line);color:var(--side-ink)}
+.nav svg{flex-shrink:0;opacity:.85}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:12px;background:var(--side-2);font-size:12px}
+.side-foot .row{display:flex;align-items:center;gap:8px}
+.side-foot b{color:var(--side-hi)}
+.tag-poc{align-self:flex-start;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:#3A2D0E;color:#F4C766}
+.linkbtn{border:0;background:transparent;padding:0;color:var(--side-ink);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px;text-align:left}
+.linkbtn:hover{color:var(--side-hi)}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding-block:14px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
+.topbar .ttl{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.topbar h1{font-size:20px;font-weight:700;line-height:1.2}
+.crumb{font-size:12px;color:var(--muted)}
+.corte{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--ink-2);padding:0 12px;min-height:36px;border-radius:8px;border:1px solid var(--line);background:var(--surface)}
+.content{padding-block:24px 48px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px;max-width:1440px;width:100%}
+
+/* Primitives */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.card-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:16px 20px;border-bottom:1px solid var(--line-2)}
+.card-h h2{font-size:15px;font-weight:700}
+.card-b{padding:18px 20px}
+.btn{min-height:40px;padding:0 14px;border-radius:8px;border:1px solid transparent;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.pri{background:var(--accent);color:var(--accent-ink)}
+.btn.pri:hover{background:var(--accent-strong)}
+.btn.ok{background:var(--s3);color:#FFFFFF}
+.btn.sec{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.btn.sec:hover{border-color:var(--muted)}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12px}
+.btn.danger{background:var(--crit);color:#FFFFFF}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border-radius:9px;background:var(--surface-2);border:1px solid var(--line)}
+.seg button{min-height:32px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.fpill{min-height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font-size:12px;font-weight:600}
+.fpill[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.chip i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.chip.s0{background:var(--s0-bg);color:var(--s0-fg)} .chip.s0 i{background:var(--s0)}
+.chip.s1{background:var(--s1-bg);color:var(--s1-fg)} .chip.s1 i{background:var(--s1)}
+.chip.s2{background:var(--s2-bg);color:var(--s2-fg)} .chip.s2 i{background:var(--s2)}
+.chip.s3{background:var(--s3-bg);color:var(--s3-fg)} .chip.s3 i{background:var(--s3)}
+.crit{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.crit.Alto{background:var(--crit);color:#FFFFFF}
+.crit.Medio{background:var(--warn-soft);color:var(--warn)}
+.crit.Bajo{background:var(--s0-bg);color:var(--s0-fg)}
+.lv{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.lv.A{background:var(--lvA-bg);color:var(--lvA-fg)} .lv.M{background:var(--lvM-bg);color:var(--lvM-fg)} .lv.B{background:var(--lvB-bg);color:var(--lvB-fg)}
+.dg{font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 7px;border-radius:5px}
+.dg.ci{background:var(--accent-soft);color:var(--accent)} .dg.ti{background:var(--ti-soft);color:var(--ti)}
+.newtag{font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:5px;background:var(--accent);color:var(--accent-ink)}
+.prio{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--crit-soft);color:var(--crit)}
+.bar{display:flex;gap:2px;height:10px;border-radius:3px;overflow:hidden;background:var(--line-2)}
+.bar span{display:block;height:100%;min-width:2px}
+.bar.lg{height:14px;border-radius:4px}
+.prog{height:6px;border-radius:999px;background:var(--line-2);overflow:hidden}
+.prog span{display:block;height:100%;background:var(--s3);border-radius:999px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.grid{display:grid;gap:16px}
+
+/* Resumen */
+.hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:0}
+.hero-l{padding:22px 24px;display:flex;flex-direction:column;gap:14px;border-right:1px solid var(--line-2)}
+.hero-r{padding:18px 20px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.big{font-family:var(--f-display);font-size:64px;font-weight:800;line-height:.95;letter-spacing:-.03em}
+.big small{font-size:28px;font-weight:700;margin-left:2px}
+.delta{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--s3-bg);color:var(--s3-fg)}
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{padding:16px 18px;display:flex;flex-direction:column;gap:8px;text-align:left;border-left-width:1px}
+button.kpi:hover{border-color:var(--muted)}
+.kpi .v{font-family:var(--f-display);font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.kpi .v small{font-size:16px;font-weight:700;color:var(--muted)}
+.kpi .d{font-size:12px;color:var(--muted);line-height:1.4}
+.kpi.alert{border-color:color-mix(in srgb,var(--crit) 45%,var(--line));background:linear-gradient(var(--crit-soft),var(--crit-soft)) top/100% 3px no-repeat,var(--surface)}
+.two{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.crow{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr) 46px;align-items:center;gap:12px;padding:7px 0}
+.crow .nm{font-size:12.5px;font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crow .ct{font-size:12px;font-weight:700;text-align:right}
+.dhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:4px 0 6px;border-bottom:1px dashed var(--line)}
+.dhead b{font-size:13px;font-weight:700}
+.dhead .p{font-family:var(--f-display);font-size:18px;font-weight:800}
+.att{display:flex;flex-direction:column}
+.att-i{display:grid;grid-template-columns:4px minmax(0,1fr);gap:14px;padding:14px 20px;border-bottom:1px solid var(--line-2)}
+.att-i:last-child{border-bottom:0}
+.att-i .stripe{border-radius:4px}
+.att-i .t{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.att-i .t b{font-size:13px;font-weight:700}
+.att-i .t .num{font-family:var(--f-display);font-size:20px;font-weight:800}
+.att-i p{font-size:12px;color:var(--muted);margin-top:2px}
+.codes{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.code{min-height:26px;padding:0 8px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);font-family:var(--f-mono);font-size:11px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:5px}
+.code:hover{border-color:var(--accent);color:var(--accent)}
+.code i{width:6px;height:6px;border-radius:50%;display:inline-block}
+
+/* Tablas */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{position:sticky;top:0;background:var(--surface-2);color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+.pname{display:flex;align-items:center;gap:12px;min-width:240px}
+.pbadge{width:36px;height:36px;flex-shrink:0;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:12px;font-weight:600}
+.pbadge.ci{background:var(--accent-soft);color:var(--accent)} .pbadge.ti{background:var(--ti-soft);color:var(--ti)}
+.pname b{font-size:13px;font-weight:700;line-height:1.3;display:block}
+.pname span{font-size:11.5px;color:var(--muted)}
+.cell-prog{display:flex;align-items:center;gap:10px;min-width:150px}
+.cell-prog .prog{flex:1 1 auto}
+.cell-prog b{font-size:12px;min-width:34px;text-align:right}
+.mx{min-width:1380px}
+.mx td{vertical-align:top}
+.mx .wide{min-width:260px;max-width:340px;line-height:1.45}
+.pending{color:var(--muted);font-style:italic}
+.empty{padding:32px 20px;text-align:center;color:var(--muted);font-size:13px}
+
+/* Diagnóstico */
+.dband{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px 28px;align-items:center;padding:22px 24px}
+.dband .stats{display:flex;flex-wrap:wrap;gap:24px}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat .v{font-family:var(--f-display);font-size:26px;font-weight:800;line-height:1.05}
+.stat .l{font-size:11.5px;color:var(--muted)}
+.comp{grid-template-columns:repeat(5,minmax(0,1fr))}
+.compc{padding:14px 16px;display:flex;flex-direction:column;gap:10px;text-align:left;width:100%}
+.compc[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.compc .nm{font-size:13px;font-weight:700;line-height:1.3;min-height:34px}
+.compc .v{font-family:var(--f-display);font-size:22px;font-weight:800}
+.compc .v small{font-size:12px;font-weight:600;color:var(--muted)}
+.alertbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 16px;border-radius:10px;background:var(--crit-soft);color:var(--crit);border:1px solid color-mix(in srgb,var(--crit) 30%,transparent)}
+.alertbar b{font-size:13px}
+.quad{display:flex;flex-direction:column;gap:10px}
+.qz{border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.qz.qw{background:var(--accent-soft)} .qz.pe{background:var(--ti-soft)}
+.qz h3{font-size:12.5px;font-weight:700}
+.qz .bub{display:flex;flex-wrap:wrap;gap:10px}
+.bubble{width:48px;height:48px;border-radius:50%;font-family:var(--f-mono);font-size:12px;font-weight:600;border:3px solid var(--s0);background:var(--surface);color:var(--ink)}
+.bubble.any{border-color:var(--s1)}
+.bubble.closed{border-color:var(--s3);background:var(--s3);color:#FFFFFF}
+.bubble.prio{outline:2px dashed var(--crit);outline-offset:3px}
+
+/* Heatmap */
+.hm{display:grid;grid-template-columns:72px repeat(3,minmax(0,1fr));gap:6px}
+.hm .ax{font-size:12px;font-weight:700;color:var(--ink-2);display:flex;align-items:center}
+.hm .axx{text-align:center;font-size:12px;font-weight:700;color:var(--ink-2)}
+.hc{min-height:120px;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;border:1px solid var(--line)}
+.hc .z{display:flex;justify-content:space-between;gap:6px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.hc .z b{font-size:14px;letter-spacing:0}
+.hc .codes{margin-top:0}
+
+/* Drawer & modal */
+.scrim{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;justify-content:flex-end}
+.scrim > .shut{position:absolute;inset:0;border:0;background:transparent;padding:0}
+.drawer{position:relative;width:100%;max-width:560px;height:100%;overflow-y:auto;background:var(--surface);display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.18);padding-top:env(safe-area-inset-top,0px);padding-right:env(safe-area-inset-right,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.dr-h{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.dr-h .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dr-h h2{font-size:20px;font-weight:700;line-height:1.3}
+.dr-b{padding:20px 24px;display:flex;flex-direction:column;gap:20px}
+.x{width:38px;height:38px;flex-shrink:0;border-radius:8px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kv div{padding:11px 14px;display:flex;flex-direction:column;gap:3px;border-bottom:1px solid var(--line-2)}
+.kv div:nth-child(odd){border-right:1px solid var(--line-2)}
+.kv div:nth-last-child(-n+2){border-bottom:0}
+.kv span{font-size:11px;color:var(--muted)}
+.kv b{font-size:13px}
+.sect{display:flex;flex-direction:column;gap:8px}
+.sect p{font-size:13.5px;line-height:1.6;max-width:65ch}
+.file{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line-2)}
+.file b{font-size:12.5px;font-weight:600;word-break:break-all;display:block}
+.file span{font-size:11px;color:var(--muted)}
+.recbox{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.recbox.cov{border-color:color-mix(in srgb,var(--s3) 40%,var(--line))}
+.note{background:var(--surface-2);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-2)}
+.modal-wrap{position:fixed;inset:0;z-index:60;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal-wrap > .shut{position:absolute;inset:0;border:0;background:transparent;padding:0}
+.modal{position:relative;width:100%;max-width:760px;max-height:100%;overflow-y:auto;background:var(--surface);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.3);display:flex;flex-direction:column}
+.modal.sm{max-width:440px}
+.m-h{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.m-h > div{flex:1 1 auto;display:flex;flex-direction:column;gap:2px}
+.m-h h2{font-size:18px;font-weight:700}
+.m-b{padding:18px 22px;display:flex;flex-direction:column;gap:16px}
+.m-f{padding:14px 22px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.field{display:flex;flex-direction:column;gap:7px}
+.field .lbl{font-size:12.5px;font-weight:700}
+.inp{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;line-height:1.5}
+textarea.inp{resize:vertical}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.opt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.opts.eq .opt{flex:1 1 0}
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.err{font-size:12.5px;font-weight:600;color:var(--crit)}
+.foot{font-size:11.5px;color:var(--muted);line-height:1.5;max-width:90ch}
+
+#tip{position:fixed;z-index:80;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12px;line-height:1.4;padding:7px 10px;border-radius:7px;max-width:260px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+#tip b{font-weight:700}
+
+/* Responsive */
+@media (max-width:1180px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.comp{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1040px){.hero{grid-template-columns:1fr}.hero-l{border-right:0;border-bottom:1px solid var(--line-2)}.two{grid-template-columns:1fr}}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .side{position:sticky;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px;padding-block:10px;padding-right:max(16px,env(safe-area-inset-right,0px));z-index:6}
+  .brand{flex-direction:row;align-items:center}
+  .brand-logo{padding:6px 9px}.brand-logo img{height:20px}
+  .brand-proj{display:none}
+  .nav{flex-direction:row;overflow-x:auto;width:100%;order:3;gap:4px;padding-bottom:2px}
+  .nav-lbl{display:none}
+  .nav button{width:auto;white-space:nowrap;min-height:36px}
+  .nav button[aria-current="page"]{box-shadow:inset 0 -2px 0 var(--accent)}
+  .side-foot{display:none}
+  .topbar{position:static;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .content{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .dband{grid-template-columns:1fr}
+}
+@media (max-width:640px){.kpis{grid-template-columns:1fr 1fr}.comp{grid-template-columns:1fr 1fr}.three{grid-template-columns:1fr}.big{font-size:52px}.crow{grid-template-columns:minmax(0,120px) minmax(0,1fr) 40px}.kv{grid-template-columns:1fr}.kv div:nth-child(odd){border-right:0}.kv div:nth-last-child(2){border-bottom:1px solid var(--line-2)}}
+@media (prefers-reduced-motion:no-preference){.btn,.fpill,.code,.nav button{transition:background-color .15s,border-color .15s,color .15s}}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="tip" hidden></div>
+<script>
+(function () {
+  'use strict';
+  var ST = [
+    { label: 'No iniciado', long: 'No iniciado', bg: '#EFEDF3', fg: '#4F4B63', dot: '#A9A4BA', bar: '#D6D2E1' },
+    { label: 'En curso', long: 'En curso', bg: '#FFF3D6', fg: '#7A4F00', dot: '#D99A06', bar: '#F0B429' },
+    { label: 'En revisión', long: 'Evidencia en revisión', bg: '#EEE7FC', fg: '#5321B0', dot: '#8B5CF6', bar: '#9B72F2' },
+    { label: 'Cubierta', long: 'Cubierta', bg: '#DDF2F0', fg: '#05605C', dot: '#087B77', bar: '#087B77' }
+  ];
+  var GROUPS = {
+    ci: [
+      { id: 'c1', n: 'Componente 1', name: 'Ambiente de Control' },
+      { id: 'c2', n: 'Componente 2', name: 'Evaluación de Riesgos' },
+      { id: 'c3', n: 'Componente 3', name: 'Actividades de Control' },
+      { id: 'c4', n: 'Componente 4', name: 'Información y Comunicación' },
+      { id: 'c5', n: 'Componente 5', name: 'Monitoreo' }
+    ],
+    ti: [
+      { id: 't0', n: 'Proceso 0', name: 'Gobierno' },
+      { id: 't1', n: 'Proceso 1', name: 'Accesos Lógicos' },
+      { id: 't2', n: 'Proceso 2', name: 'Cambios a Programas' },
+      { id: 't3', n: 'Proceso 3', name: 'Operaciones de TI' },
+      { id: 't4', n: 'Proceso 4', name: 'Ciberseguridad' }
+    ]
+  };
+  var PREFIX = { c1: 'AC-', c2: 'ER-', c3: 'ACC-', c4: 'IC-', c5: 'MC-', t0: 'R-GOB-', t1: 'R-ACC-', t2: 'R-CAM-', t3: 'R-OPE-', t4: 'R-CIB-' };
+  /* código, diag, grupo, criticidad, recomendación, plan, estado, impacto, probabilidad, complejidad, hallazgo */
+  var R = [
+    ['AC-001', 'ci', 'c1', 'Alto', 'Políticas y procedimientos de Reporte Financiero', 'CI-P1', 3, 'A', 'M', 'B', 'Existen numerosos procedimientos que no están alineados a los procesos de reporte financiero y no se actualizan de forma periódica.'],
+    ['AC-002', 'ci', 'c1', 'Alto', 'Comunicación y seguimiento de observaciones de auditoría interna y externa', 'CI-P6', 2, 'A', 'A', 'B', 'No existe un proceso claro de comunicación y seguimiento de observaciones de auditoría; varias permanecen abiertas desde periodos anteriores.'],
+    ['AC-003', 'ci', 'c1', 'Medio', 'Trazabilidad de sanciones por canal de denuncias', 'CI-P6', 1, 'M', 'M', 'B', 'Los casos se resuelven, pero la evidencia de las medidas disciplinarias no está consolidada.'],
+    ['AC-004', 'ci', 'c1', 'Alto', 'Plan de sucesión', 'CI-P2', 1, 'A', 'M', 'M', 'Los planes de sucesión solo cubren una parte de las posiciones clave de la alta dirección.'],
+    ['AC-005', 'ci', 'c1', 'Alto', 'Estructura de área de Control Interno', 'CI-P2', 1, 'A', 'A', 'A', 'No existe un área responsable del diseño, implementación y conducción de riesgos y controles.'],
+    ['AC-006', 'ci', 'c1', 'Alto', 'Manuales de Organización y Funciones (MOF)', 'CI-P2', 0, 'A', 'M', 'M', 'El MOF no cubre todos los niveles de la organización ni incluye funciones de control interno.'],
+    ['AC-007', 'ci', 'c1', 'Alto', 'Evaluación de la estructura organizacional', 'CI-P2', 0, 'A', 'M', 'A', 'No se evalúa periódicamente si la estructura cubre los riesgos altos y medios.'],
+    ['AC-008', 'ci', 'c1', 'Medio', 'Complementar plan de retención de talento', 'CI-P2', 0, 'M', 'M', 'M', 'No hay un plan de retención de talento formalizado.'],
+    ['AC-009', 'ci', 'c1', 'Alto', 'Cultura de riesgos y controles. Capacitaciones en Control Interno y SOX', 'CI-P5', 1, 'A', 'A', 'M', 'No hay capacitación periódica en Control Interno y SOX ni refuerzo de la cultura de riesgos y controles.'],
+    ['AC-010', 'ci', 'c1', 'Alto', 'Diseño / actualización de Entity Level Controls (ELC)', 'CI-P4', 1, 'A', 'A', 'A', 'Los Entity Level Controls requieren remediación y actualización.'],
+    ['ER-001', 'ci', 'c2', 'Medio', 'Despliegue del Plan Estratégico y objetivos (KPI)', 'CI-P3', 1, 'M', 'M', 'M', 'Los objetivos no se desprenden del plan estratégico ni se asocian a las evaluaciones de desempeño.'],
+    ['ER-002', 'ci', 'c2', 'Medio', 'Metodología corporativa de Gestión de Riesgos', 'CI-P3', 3, 'M', 'M', 'A', 'No todos los universos de riesgo están documentados y los controles no están mapeados a los riesgos.'],
+    ['ER-003', 'ci', 'c2', 'Alto', 'Materialidad financiera y alcance SOX (Scoping)', 'CI-P4', 2, 'A', 'A', 'A', 'No hay un procedimiento documentado para determinar la materialidad financiera y el alcance SOX.'],
+    ['ER-004', 'ci', 'c2', 'Alto', 'Plan de Continuidad del Negocio', 'CI-P3', 0, 'A', 'M', 'A', 'El plan de continuidad del negocio no está actualizado.'],
+    ['ACC-001', 'ci', 'c3', 'Alto', 'Procesos relevantes para fines de Reporte Financiero (SOX)', 'CI-P4', 1, 'A', 'A', 'A', 'Los controles están definidos a nivel estratégico, pero no para todo el reporte financiero.'],
+    ['ACC-002', 'ci', 'c3', 'Alto', 'Management Review Controls (MRC) e Información Producida por la Entidad (IPE)', 'CI-P4', 0, 'A', 'A', 'M', 'No se documentan las revisiones de la gerencia ni la información utilizada para ejecutar los controles.'],
+    ['ITGC', 'ci', 'c3', 'Alto', 'Sección especial de TI: su avance sale del diagnóstico de TI', null, 0, 'A', 'A', 'A', 'Ver los hallazgos del diagnóstico de TI.'],
+    ['IC-001', 'ci', 'c4', 'Medio', 'Comunicación a reguladores', 'CI-P7', 3, 'M', 'M', 'B', 'No hay un procedimiento formal para la comunicación a reguladores.'],
+    ['IC-002', 'ci', 'c4', 'Alto', 'Procedimiento de Comunicación Externa', 'CI-P7', 1, 'A', 'M', 'M', 'Se identificaron accesos a información sensible en carpetas compartidas que no corresponden al rol de los usuarios.'],
+    ['MC-001', 'ci', 'c5', 'Alto', 'Evaluaciones continuas y/o independientes del Sistema de Control Interno', 'CI-P8', 0, 'A', 'M', 'A', 'No se mantiene un entendimiento actualizado del diseño y estado del sistema de control interno ni evaluaciones continuas.'],
+    ['R-GOB-1', 'ti', 't0', 'Alto', 'Analizar la segregación interna de funciones de TI', 'TI-P1', 3, 'A', 'M', 'M', ''],
+    ['R-GOB-2', 'ti', 't0', 'Alto', 'Redefinir la segunda línea de defensa de IT/Ciberseguridad', 'TI-P1', 1, 'A', 'M', 'A', 'No existe una segunda línea de defensa de TI/Ciberseguridad.'],
+    ['R-GOB-3', 'ti', 't0', 'Alto', 'Metodología de riesgos de IT/Ciberseguridad', 'TI-P1', 1, 'A', 'M', 'M', ''],
+    ['R-GOB-4', 'ti', 't0', 'Alto', 'Comité de ciberseguridad', 'TI-P1', 3, 'A', 'M', 'B', ''],
+    ['R-ACC-1', 'ti', 't1', 'Alto', 'Independizar funciones de operación y revisión de accesos', 'TI-P2', 1, 'A', 'A', 'M', 'Se reportaron conflictos de accesos y segregación de funciones en el ERP.'],
+    ['R-ACC-2', 'ti', 't1', 'Alto', 'Actualizar las matrices e implementarlas en la operación', 'TI-P2', 1, 'A', 'A', 'A', 'Las matrices de autorización y SoD no están actualizadas ni aplicadas en la operación.'],
+    ['R-ACC-3', 'ti', 't1', 'Alto', 'Fortalecer el rol del Key User', 'TI-P2', 0, 'A', 'M', 'M', ''],
+    ['R-ACC-4', 'ti', 't1', 'Alto', 'Implementar y revisar controles compensatorios', 'TI-P2', 2, 'A', 'A', 'M', ''],
+    ['R-CAM-1', 'ti', 't2', 'Medio', 'Ampliar el alcance normativo de cambios', 'TI-P3', 3, 'M', 'M', 'B', ''],
+    ['R-CAM-2', 'ti', 't2', 'Medio', 'Formalizar la política de segregación de ambientes', 'TI-P3', 3, 'M', 'M', 'B', ''],
+    ['R-CAM-3', 'ti', 't2', 'Alto', 'Fortalecer el monitoreo de cambios de emergencia', 'TI-P4', 3, 'A', 'M', 'B', ''],
+    ['R-OPE-1', 'ti', 't3', 'Alto', 'Fortalecer el monitoreo técnico-operativo de Jobs', 'TI-P5', 2, 'A', 'M', 'B', ''],
+    ['R-OPE-2', 'ti', 't3', 'Alto', 'Actualizar el DRP', 'TI-P6', 1, 'A', 'M', 'A', 'El plan de recuperación ante desastres no está actualizado.'],
+    ['R-OPE-3', 'ti', 't3', 'Medio', 'Incluir análisis causa raíz de los incidentes', 'TI-P7', 3, 'M', 'M', 'B', ''],
+    ['R-CIB-1', 'ti', 't4', 'Alto', 'Monitoreo de terceros críticos', 'TI-P8', 0, 'A', 'M', 'A', ''],
+    ['R-CIB-2', 'ti', 't4', 'Alto', 'Plan estratégico formal de ciberseguridad', 'TI-P8', 1, 'A', 'M', 'A', ''],
+    ['R-CIB-3', 'ti', 't4', 'Alto', 'Pruebas automatizadas para confirmar capacidad de seguridad', 'TI-P8', 0, 'A', 'M', 'A', ''],
+    ['R-CIB-4', 'ti', 't4', 'Medio', 'Revisión y actualización de inventarios (IT/OT)', 'TI-P8', 0, 'M', 'M', 'M', '']
+  ];
+  var P = [
+    ['CI-P1', 'ci', 'P1', 'Políticas y Procedimientos', 'Implementar una metodología corporativa para la gestión estandarizada de políticas y procedimientos, con énfasis en Reporte Financiero.', '3 – 6 meses', 'qw', false, 'Metodología aprobada y evidencia validada. Plan cerrado en el corte del 16 oct.'],
+    ['CI-P2', 'ci', 'P2', 'Estructura Organizacional y Gestión del Talento', 'Fortalecer la estructura de supervisión del Control Interno, los MOF, los planes de sucesión y retención de talento, y la revisión periódica de la estructura organizacional.', '3 – 12 meses', 'pe', false, 'El cliente compartió avances del plan de sucesión y de la estructura de Control Interno. Pendiente definir el alcance del MOF.'],
+    ['CI-P3', 'ci', 'P3', 'Gestión Integral de Riesgos y Estrategia', 'Alinear el despliegue del Plan Estratégico con objetivos, KPI y desempeño; actualizar la metodología de Gestión de Riesgos e implementar el Plan de Continuidad del Negocio.', '3 – 12 meses', 'pe', false, 'Metodología de riesgos validada. El Plan de Continuidad depende de la actualización del DRP (TI-P6).'],
+    ['CI-P4', 'ci', 'P4', 'Fortalecer la Documentación del Marco de Control Interno SOX', 'Fortalecer los ELC y formalizar el scoping SOX, los procesos relevantes, la documentación de controles, los MRC y la IPE utilizada en su ejecución.', '6 – 18 meses / continuo', 'pe', true, 'Memo de materialidad y scoping recibido; en revisión por el equipo.'],
+    ['CI-P5', 'ci', 'P5', 'Cultura de Control Interno', 'Implementar capacitación periódica en Control Interno y SOX y fortalecer la cultura de riesgos y controles en la ejecución de procesos y toma de decisiones.', '3 – 6 meses / continuo', 'pe', true, 'Se definió el temario del primer ciclo de capacitación.'],
+    ['CI-P6', 'ci', 'P6', 'Gestión de Observaciones, Denuncias y Remediación', 'Fortalecer la comunicación, el seguimiento y cierre de observaciones de auditoría y la trazabilidad integral de denuncias, investigaciones, medidas disciplinarias y cierre formal.', '3 – 6 meses / continuo', 'qw', false, 'Se recibió la matriz de seguimiento de observaciones; en revisión.'],
+    ['CI-P7', 'ci', 'P7', 'Comunicación Corporativa', 'Formalizar el protocolo y proceso de Comunicación a Reguladores y Terceros, definiendo responsables, niveles de revisión y aprobación, plazos y mecanismos de control.', '6 – 12 meses', 'qw', false, 'Protocolo de comunicación a reguladores validado. Procedimiento de comunicación externa en redacción.'],
+    ['CI-P8', 'ci', 'P8', 'Monitoreo del Control Interno', 'Fortalecer el monitoreo del Sistema de Control Interno mediante un entendimiento actualizado de su diseño y estado, y evaluaciones continuas y/o independientes.', '6 – 12 meses / continuo', 'pe', false, 'Sin avance reportado en este corte.'],
+    ['TI-P1', 'ti', 'P1', 'Redefinir el Modelo de Gobierno de TI y Ciberseguridad', 'Analizar la segregación interna de funciones de TI, establecer la segunda línea de defensa, implementar la metodología de riesgos y el comité de ciberseguridad.', '4 – 6 meses', 'pe', true, 'Comité de ciberseguridad instalado. Segunda línea y metodología de riesgos en curso.'],
+    ['TI-P2', 'ti', 'P2', 'Fortalecer la segregación de funciones', 'Independencia funcional de la revisión, actualización de matrices de autorización/SoD, coordinación con los Key User y definición de controles compensatorios.', '6 – 12 meses', 'pe', true, 'Limpieza de perfiles en curso; controles compensatorios enviados para revisión.'],
+    ['TI-P3', 'ti', 'P3', 'Fortalecer los procedimientos de Cambios a Programas', 'Ampliar el alcance normativo a infraestructura y datos, y formalizar la segregación de ambientes.', '1 – 2 meses', 'qw', false, 'Políticas actualizadas y evidencia validada.'],
+    ['TI-P4', 'ti', 'P4', 'Incrementar el monitoreo de cambios de emergencia', 'Mayor monitoreo de regularizaciones para cambios de emergencia en aplicaciones e infraestructura.', '1 – 2 meses', 'qw', false, 'Reporte de monitoreo de cambios de emergencia validado.'],
+    ['TI-P5', 'ti', 'P5', 'Revisar el monitoreo técnico-operativo de los jobs e interfaces críticos', 'Fortalecer el monitoreo de transferencia de información en interfaces y la ejecución correcta de jobs que impactan información productiva.', '1 – 2 meses', 'qw', false, 'Tablero de monitoreo de jobs recibido; en revisión.'],
+    ['TI-P6', 'ti', 'P6', 'Actualizar el DRP', 'Asegurar que la recuperación se ejecute contra procedimientos, infraestructura, organigrama y responsables actualizados.', '3 – 5 meses', 'pe', false, 'Levantamiento de procedimientos de recuperación iniciado.'],
+    ['TI-P7', 'ti', 'P7', 'Incluir el análisis de RCA de los incidentes', 'Incorporar un análisis de causa raíz formal que genere aprendizaje y evidencia de prevención de recurrencia.', '1 – 2 meses', 'qw', false, 'Procedimiento de RCA validado.'],
+    ['TI-P8', 'ti', 'P8', 'Fortalecimiento de la Postura actual de Ciberseguridad (IT/OT)', 'Diseñar un plan estratégico de ciberseguridad, revisar la madurez de los controles, fortalecer la cadena de suministro y actualizar inventarios IT/OT.', '6 – 12 meses', 'pe', false, 'Borrador del plan estratégico de ciberseguridad en elaboración.']
+  ];
+  var DET = {
+    'ACC-001': [['Flujogramas', 0], ['Narrativas', 0], ['Recorridos "Walkthrough"', 0], ['Matriz de Riesgos y Controles "RCM"', 0], ['Diseño de Controles "Test Scripts"', 0], ['Prueba de Controles – Efectividad', 1], ['Remediación en los casos que apliquen', 1], ['Seguimiento / Monitoreo y Mejora Continua', 1], ['Sensitive Access Transaction "SAT"', 1], ['Segregation of Duties "SOD"', 1], ['System Generated Report "SGR"', 1], ['Excel Inventory', 1], ['Acompañamiento 1 x 1', 0]],
+    'IC-002': [['Clasificación de Información Sensible', 0], ['Revisión de información expuesta a terceros', 0]]
+  };
+  var BY = 'Equipo Knowledge · ';
+  var INIT_FILES = {
+    'AC-001': [{ name: 'Metodologia_Politicas_Procedimientos_v1.pdf', meta: BY + '16 oct 2026' }, { name: 'Acta_aprobacion_Gerencia_General.pdf', meta: BY + '16 oct 2026' }],
+    'AC-002': [{ name: 'Matriz_seguimiento_observaciones.xlsx', meta: BY + '23 oct 2026' }],
+    'ER-002': [{ name: 'Metodologia_Gestion_Riesgos.pdf', meta: BY + '9 oct 2026' }],
+    'ER-003': [{ name: 'Memo_materialidad_scoping_SOX.docx', meta: BY + '23 oct 2026' }],
+    'IC-001': [{ name: 'Protocolo_comunicacion_reguladores.pdf', meta: BY + '2 oct 2026' }],
+    'R-GOB-1': [{ name: 'Analisis_SoD_interna_TI.xlsx', meta: BY + '9 oct 2026' }],
+    'R-GOB-4': [{ name: 'Acta_instalacion_Comite_Ciberseguridad.pdf', meta: BY + '16 oct 2026' }],
+    'R-ACC-4': [{ name: 'Controles_compensatorios_ERP_v2.xlsx', meta: BY + '23 oct 2026' }],
+    'R-CAM-1': [{ name: 'Politica_Gestion_Cambios_v3.pdf', meta: BY + '2 oct 2026' }],
+    'R-CAM-2': [{ name: 'Politica_Segregacion_Ambientes.pdf', meta: BY + '2 oct 2026' }],
+    'R-CAM-3': [{ name: 'Reporte_monitoreo_cambios_emergencia.xlsx', meta: BY + '9 oct 2026' }],
+    'R-OPE-1': [{ name: 'Tablero_monitoreo_jobs_interfaces.pdf', meta: BY + '23 oct 2026' }],
+    'R-OPE-3': [{ name: 'Procedimiento_RCA_incidentes.pdf', meta: BY + '16 oct 2026' }]
+  };
+  var WEEKS = [['4 sep', 0], ['11 sep', 3], ['18 sep', 5], ['25 sep', 8], ['2 oct', 11], ['9 oct', 16], ['16 oct', 21]];
+
+
+  var BASE_RECS = R.map(function (a) {
+    return { code: a[0], diag: a[1], group: a[2], crit: a[3], title: a[4], plan: a[5], init: a[6], I: a[7], P: a[8], C: a[9], hallazgo: a[10],
+      detail: (DET[a[0]] || []).map(function (x) { return { t: x[0], sub: !!x[1] }; }), isNew: false };
+  });
+  var PLANS = P.map(function (a) { return { id: a[0], diag: a[1], short: a[2], name: a[3], desc: a[4], effort: a[5], quad: a[6], prio: a[7], note: a[8] }; });
+  var PLAN_BY = {};
+  PLANS.forEach(function (p) { PLAN_BY[p.id] = p; });
+  var GNAME = {}, GFULL = {};
+  GROUPS.ci.concat(GROUPS.ti).forEach(function (g) { GNAME[g.id] = g.name; GFULL[g.id] = g.n + ' · ' + g.name; });
+  var IMP = { A: 'Alto', M: 'Medio', B: 'Bajo' };
+  var LVL = { A: 'Alta', M: 'Media', B: 'Baja' };
+  var SCOL = ['var(--s0)', 'var(--s1)', 'var(--s2)', 'var(--s3)'];
+  var DNAME = { ci: 'Control Interno', ti: 'Tecnología de la Información' };
+
+  function initStatus() { var s = {}; BASE_RECS.forEach(function (r) { if (r.code !== 'ITGC') { s[r.code] = r.init; } }); return s; }
+  function initFiles() { return JSON.parse(JSON.stringify(INIT_FILES)); }
+
+  /* ===== Estado + persistencia local ===== */
+  var KEY = 'knowledge-seguimiento-poc-v2';
+  var VIEWS = ['resumen', 'ci', 'ti', 'planes', 'matriz'];
+  var state = {
+    view: 'resumen', grp: null, panel: null, pid: null, rid: null, form: null, confirm: false,
+    pfil: 'all', mview: 'tabla', ms: 'all', mx: 'riesgo', mcrit: 'all', mplan: 'all', mst: 'all', q: '',
+    status: initStatus(), files: initFiles(), added: [], edits: {}
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved && saved.status) { state.status = saved.status; state.files = saved.files || state.files; state.added = saved.added || []; state.edits = saved.edits || {}; }
+  } catch (e) { /* sin almacenamiento */ }
+  try { var hv = (location.hash || '').replace('#', ''); if (VIEWS.indexOf(hv) !== -1) { state.view = hv; } } catch (e) { /* ignorar */ }
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify({ status: state.status, files: state.files, added: state.added, edits: state.edits })); } catch (e) { /* ignorar */ } }
+  function set(patch) { Object.assign(state, patch); render(); }
+
+  /* ===== Utilidades ===== */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function pct(a, t) { return t ? Math.round(a / t * 100) : 0; }
+  function act(name, arg) { return 'data-act="' + name + '"' + (arg != null ? ' data-arg="' + esc(arg) + '"' : ''); }
+  function tip(t) { return ' data-tip="' + esc(t) + '"'; }
+  function sug(I, Pr) { var v = { A: 3, M: 2, B: 1 }; var s = v[I] * v[Pr]; return s >= 6 ? 'Alto' : (s >= 3 ? 'Medio' : 'Bajo'); }
+  function riskZone(I, Pr) { return 'Riesgo ' + sug(I, Pr).toLowerCase(); }
+  function priorZone(I, C) {
+    var hiI = I === 'A', hiC = C === 'A';
+    if (hiI && !hiC) { return 'Quick win'; }
+    if (hiI && hiC) { return 'Proyecto estratégico'; }
+    if (!hiI && !hiC) { return 'Complementario'; }
+    return 'Evaluar / replantear';
+  }
+  function chip(st) { return '<span class="chip s' + st + '"><i></i>' + ST[st].long + '</span>'; }
+  function critB(c) { return '<span class="crit ' + esc(c) + '">' + esc(c) + '</span>'; }
+  function lv(k, lbl) { return '<span class="lv ' + k + '">' + lbl + '</span>'; }
+  function dg(d) { return '<span class="dg ' + d + '">' + (d === 'ci' ? 'COSO' : 'TI') + '</span>'; }
+  function prog(p) { return '<div class="prog"><span style="width:' + p + '%"></span></div>'; }
+  function stackBar(counts, total, lg, label) {
+    var segs = [3, 2, 1, 0].filter(function (o) { return counts[o] > 0; }).map(function (o) {
+      return '<span style="flex:' + counts[o] + ' 1 0;background:' + SCOL[o] + '"' + tip('<b>' + ST[o].long + '</b><br>' + counts[o] + ' de ' + total + (label ? ' · ' + label : '')) + '></span>';
+    }).join('');
+    return '<div class="bar' + (lg ? ' lg' : '') + '" role="img" aria-label="' + [3, 2, 1, 0].map(function (o) { return ST[o].long + ' ' + counts[o]; }).join(', ') + '">' + segs + '</div>';
+  }
+  function legend(counts) {
+    return '<div class="legend">' + [3, 2, 1, 0].map(function (o) { return '<span><i style="background:' + SCOL[o] + '"></i>' + ST[o].long + ' <b>' + counts[o] + '</b></span>'; }).join('') + '</div>';
+  }
+  function codeBtn(r) { return '<button type="button" class="code" ' + act('rec', r.code) + tip('<b>' + esc(r.code) + '</b> · ' + ST[r.st].long + '<br>' + esc(r.title)) + '><i style="background:' + SCOL[r.st] + '"></i>' + esc(r.code) + '</button>'; }
+  function allRecs() {
+    var apply = function (r) { var e = state.edits[r.code]; return e ? Object.assign({}, r, e) : r; };
+    return BASE_RECS.map(apply).concat(state.added.map(apply));
+  }
+  function nextCode(group) {
+    var pre = PREFIX[group], max = 0;
+    allRecs().forEach(function (r) { if (r.code.indexOf(pre) === 0) { var n = parseInt(r.code.slice(pre.length), 10); if (!isNaN(n) && n > max) { max = n; } } });
+    var num = max + 1;
+    if (pre.indexOf('R-') === 0) { return pre + num; }
+    return pre + (num < 10 ? '00' + num : (num < 100 ? '0' + num : String(num)));
+  }
+  function svg(d, w) { return '<svg aria-hidden="true" width="' + (w || 16) + '" height="' + (w || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'; }
+  var I = {
+    home: svg('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
+    ci: svg('<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>'),
+    ti: svg('<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>'),
+    plans: svg('<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>'),
+    mx: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>'),
+    plus: svg('<path d="M12 5v14M5 12h14"/>', 15),
+    close: svg('<path d="M6 6l12 12M18 6L6 18"/>', 18),
+    check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 15),
+    warn: svg('<path d="M12 3l9.5 16.5h-19z"/><path d="M12 10v4M12 17h.01"/>', 18),
+    file: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', 18),
+    edit: svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>', 15),
+    cal: svg('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', 14),
+    up: svg('<path d="M7 14l5-5 5 5"/>', 13),
+    arrow: svg('<path d="M9 6l6 6-6 6"/>', 14)
+  };
+
+  /* ===== Cálculos ===== */
+  function compute() {
+    var raw = allRecs();
+    var tiVals = raw.filter(function (r) { return r.diag === 'ti'; }).map(function (r) { return state.status[r.code] || 0; });
+    var itgc = tiVals.every(function (v) { return v === 3; }) ? 3 : (tiVals.some(function (v) { return v > 0; }) ? 1 : 0);
+    var recs = raw.map(function (r) {
+      var isItgc = r.code === 'ITGC';
+      var st = isItgc ? itgc : (state.status[r.code] || 0);
+      return Object.assign({}, r, { st: st, isItgc: isItgc, noPlan: !r.plan && !isItgc, groupName: GNAME[r.group] });
+    });
+    var plans = PLANS.map(function (p) {
+      var rs = recs.filter(function (r) { return r.plan === p.id; });
+      var cnt = [0, 0, 0, 0]; rs.forEach(function (r) { cnt[r.st] += 1; });
+      var cov = cnt[3];
+      var any = rs.some(function (r) { return r.st > 0; });
+      var closed = rs.length > 0 && cov === rs.length;
+      return Object.assign({}, p, { recs: rs, counts: cnt, cov: cov, tot: rs.length, closed: closed, any: any, stc: closed ? 3 : (any ? 1 : 0), stateLabel: closed ? 'Cerrado' : (any ? 'En curso' : 'No iniciado') });
+    });
+    function diag(d) {
+      var rs = recs.filter(function (r) { return r.diag === d; });
+      var counts = [0, 0, 0, 0]; rs.forEach(function (r) { counts[r.st] += 1; });
+      var ps = plans.filter(function (x) { return x.diag === d; });
+      return {
+        key: d, recs: rs, counts: counts, plans: ps, noPlan: rs.filter(function (r) { return r.noPlan; }),
+        closed: ps.filter(function (x) { return x.closed; }).length, pct: pct(counts[3], rs.length),
+        eyebrow: d === 'ci' ? 'Diagnóstico 1 · Marco COSO' : 'Diagnóstico 2 · ITGC y Ciberseguridad',
+        title: DNAME[d], groupWord: d === 'ci' ? 'componente' : 'proceso',
+        cols: GROUPS[d].map(function (g) {
+          var gr = rs.filter(function (r) { return r.group === g.id; });
+          var c = [0, 0, 0, 0]; gr.forEach(function (r) { c[r.st] += 1; });
+          return { g: g, recs: gr, counts: c, cov: c[3] };
+        })
+      };
+    }
+    var counts = [0, 0, 0, 0]; recs.forEach(function (r) { counts[r.st] += 1; });
+    return { recs: recs, plans: plans, counts: counts, ci: diag('ci'), ti: diag('ti') };
+  }
+
+  /* ===== Gráfico de tendencia ===== */
+  function trend(gp) {
+    var pts = WEEKS.map(function (w) { return { l: w[0], v: w[1] }; }).concat([{ l: 'Hoy', v: gp, cur: true }]);
+    var W = 560, H = 196, L = 36, Rr = 18, T = 18, B = 30;
+    var maxV = Math.max.apply(null, pts.map(function (p) { return p.v; }));
+    var top = Math.max(40, Math.ceil((maxV + 5) / 10) * 10);
+    var x = function (i) { return L + i * (W - L - Rr) / (pts.length - 1); };
+    var y = function (v) { return T + (H - T - B) * (1 - v / top); };
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Cumplimiento semanal: ' + pts.map(function (p) { return p.l + ' ' + p.v + '%'; }).join(', ') + '" style="display:block;overflow:visible">';
+    for (var t = 0; t <= top; t += 10) {
+      s += '<line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="var(--line-2)" stroke-width="1"' + (t === 0 ? '' : ' stroke-dasharray="3 4"') + '/>';
+      s += '<text x="' + (L - 8) + '" y="' + (y(t) + 4) + '" text-anchor="end" font-size="10.5" fill="var(--muted)" font-family="var(--f-body)">' + t + '%</text>';
+    }
+    var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1); }).join(' ');
+    s += '<defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>';
+    s += '<path d="' + line + ' L' + x(pts.length - 1) + ' ' + y(0) + ' L' + x(0) + ' ' + y(0) + ' Z" fill="url(#ga)"/>';
+    s += '<path d="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    pts.forEach(function (p, i) {
+      s += '<text x="' + x(i) + '" y="' + (H - 9) + '" text-anchor="middle" font-size="10.5" fill="' + (p.cur ? 'var(--ink)' : 'var(--muted)') + '" font-weight="' + (p.cur ? 700 : 500) + '" font-family="var(--f-body)">' + p.l + '</text>';
+      if (p.cur) {
+        s += '<circle cx="' + x(i) + '" cy="' + y(p.v) + '" r="6" fill="var(--accent)" stroke="var(--surface)" stroke-width="2.5"/>';
+        s += '<text x="' + (x(i) - 10) + '" y="' + (y(p.v) - 12) + '" text-anchor="end" font-size="12" font-weight="800" fill="var(--ink)" font-family="var(--f-display)">' + p.v + '%</text>';
+      } else {
+        s += '<circle cx="' + x(i) + '" cy="' + y(p.v) + '" r="3.5" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>';
+      }
+      var prev = i ? pts[i - 1].v : null;
+      s += '<rect x="' + (x(i) - 30) + '" y="' + T + '" width="60" height="' + (H - T - B) + '" fill="transparent"' + tip('<b>' + (p.cur ? 'Estado actual' : 'Corte ' + p.l) + '</b><br>' + p.v + '% cubierto' + (prev != null ? ' · ' + (p.v - prev >= 0 ? '+' : '') + (p.v - prev) + ' pp' : '')) + '/>';
+    });
+    return s + '</svg>';
+  }
+
+  /* ===== Vistas ===== */
+  function viewResumen(c) {
+    var total = c.recs.length, covered = c.counts[3], gp = pct(covered, total);
+    var last = WEEKS[WEEKS.length - 1][1], dlt = gp - last;
+    var altoAll = c.recs.filter(function (r) { return r.crit === 'Alto'; });
+    var altoPend = altoAll.filter(function (r) { return r.st !== 3; });
+    var rev = c.recs.filter(function (r) { return r.st === 2; });
+    var noPlan = c.recs.filter(function (r) { return r.noPlan; });
+    var closedN = c.ci.closed + c.ti.closed;
+    var crit = c.recs.filter(function (r) { return r.I === 'A' && r.P === 'A' && r.st !== 3 && !r.isItgc; });
+    var prioOpen = c.plans.filter(function (p) { return p.prio && !p.closed; });
+
+    var h = '<section class="card hero">' +
+      '<div class="hero-l"><span class="eyebrow">Cumplimiento global</span>' +
+      '<div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap"><span class="big">' + gp + '<small>%</small></span>' +
+      '<span class="delta" style="margin-bottom:8px' + (dlt < 0 ? ';background:var(--crit-soft);color:var(--crit)' : '') + '">' + (dlt >= 0 ? I.up : '') + (dlt >= 0 ? '+' : '') + dlt + ' pp vs. corte anterior</span></div>' +
+      '<p style="font-size:13px;color:var(--ink-2)"><b>' + covered + ' de ' + total + '</b> recomendaciones cubiertas con evidencia validada por el equipo.</p>' +
+      stackBar(c.counts, total, true, 'total') + legend(c.counts) + '</div>' +
+      '<div class="hero-r"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="eyebrow">Tendencia semanal</span><span class="muted" style="font-size:11.5px">Cortes de los viernes · % de recomendaciones cubiertas</span></div>' + trend(gp) + '</div>' +
+      '</section>';
+
+    h += '<section class="grid kpis">' +
+      '<button type="button" class="card kpi" ' + act('view', 'planes') + '><span class="eyebrow">Planes cerrados</span><span class="v">' + closedN + ' <small>/ ' + c.plans.length + '</small></span>' + prog(pct(closedN, c.plans.length)) + '<span class="d">Control Interno ' + c.ci.closed + ' de 8 · TI ' + c.ti.closed + ' de 8</span></button>' +
+      '<button type="button" class="card kpi" ' + act('mfilter', 'Alto') + '><span class="eyebrow">Criticidad alta pendiente</span><span class="v" style="color:var(--crit)">' + altoPend.length + ' <small>/ ' + altoAll.length + '</small></span><span class="d">Recomendaciones de criticidad Alta que aún no están cubiertas.</span></button>' +
+      '<button type="button" class="card kpi" ' + act('mstatus', '2') + '><span class="eyebrow">Evidencias por validar</span><span class="v" style="color:var(--s2)">' + rev.length + '</span><span class="d">Cargadas y a la espera de validación del equipo.</span></button>' +
+      '<button type="button" class="card kpi' + (noPlan.length ? ' alert' : '') + '" ' + act('mnoplan') + '><span class="eyebrow">Sin plan de acción</span><span class="v" style="color:' + (noPlan.length ? 'var(--crit)' : 'var(--s3)') + '">' + noPlan.length + '</span><span class="d">' + (noPlan.length ? 'Recomendaciones que no están cubiertas por ningún plan.' : 'Todas las recomendaciones tienen un plan asignado.') + '</span></button>' +
+      '</section>';
+
+    h += '<section class="grid two">';
+    h += '<div class="card"><div class="card-h"><h2>Avance por componente y proceso</h2><span class="muted" style="font-size:11.5px">Cubiertas / total</span></div><div class="card-b" style="display:flex;flex-direction:column;gap:18px">';
+    [c.ci, c.ti].forEach(function (d) {
+      h += '<div><div class="dhead"><button type="button" class="linkbtn" style="color:var(--ink);text-decoration:none;font-size:13px;font-weight:700" ' + act('view', d.key) + '>' + dg(d.key) + ' &nbsp;' + d.title + '</button><span class="p">' + d.pct + '%</span></div>' +
+        d.cols.map(function (col) {
+          return '<div class="crow"><span class="nm" title="' + esc(col.g.name) + '">' + col.g.name + '</span>' + stackBar(col.counts, col.recs.length, false, col.g.name) + '<span class="ct">' + col.cov + '/' + col.recs.length + '</span></div>';
+        }).join('') + '</div>';
+    });
+    h += '</div></div>';
+
+    var att = [];
+    if (noPlan.length) { att.push({ c: 'var(--crit)', t: 'Sin plan de acción', n: noPlan.length, d: 'Insumo para los siguientes planes: asígnalas a un plan o agrúpalas en uno nuevo.', recs: noPlan }); }
+    att.push({ c: 'var(--crit)', t: 'Zona crítica sin cubrir', n: crit.length, d: 'Impacto alto y probabilidad alta. Son las que más exponen al cliente.', recs: crit });
+    att.push({ c: 'var(--s2)', t: 'Evidencias por validar', n: rev.length, d: 'Revisa la evidencia cargada para marcarlas como cubiertas o devolverlas.', recs: rev });
+    att.push({ c: 'var(--s1)', t: 'Planes prioritarios abiertos', n: prioOpen.length, d: 'Marcados como prioritarios en las láminas presentadas.', plans: prioOpen });
+    h += '<div class="card"><div class="card-h"><h2>Requiere atención</h2><span class="muted" style="font-size:11.5px">Corte vie 23 oct</span></div><div class="att">' +
+      att.map(function (a) {
+        return '<div class="att-i"><span class="stripe" style="background:' + a.c + '"></span><div style="min-width:0"><div class="t"><b>' + a.t + '</b><span class="num">' + a.n + '</span></div><p>' + a.d + '</p>' +
+          (a.recs && a.recs.length ? '<div class="codes">' + a.recs.map(codeBtn).join('') + '</div>' : '') +
+          (a.plans && a.plans.length ? '<div class="codes">' + a.plans.map(function (p) { return '<button type="button" class="code" ' + act('plan', p.id) + tip('<b>' + p.id + '</b> · ' + p.cov + '/' + p.tot + ' cubiertas<br>' + esc(p.name)) + '><i style="background:' + SCOL[p.stc] + '"></i>' + p.id + '</button>'; }).join('') + '</div>' : '') +
+          '</div></div>';
+      }).join('') + '</div></div>';
+    h += '</section>';
+
+    h += '<section class="card"><div class="card-h"><h2>Planes de acción</h2><button type="button" class="btn sec sm" ' + act('view', 'planes') + '>Ver detalle de planes ' + I.arrow + '</button></div>' + plansTable(c.plans.slice().sort(function (a, b) { return (b.prio - a.prio) || (pct(a.cov, a.tot) - pct(b.cov, b.tot)); }), true) + '</section>';
+    return h;
+  }
+
+  function plansTable(list, compact) {
+    if (!list.length) { return '<div class="empty">No hay planes con este filtro.</div>'; }
+    return '<div class="tbl-wrap"><table><thead><tr><th>Plan de acción</th><th>Diag.</th><th>Tipo</th>' + (compact ? '' : '<th>Esfuerzo</th>') + '<th>Recomendaciones</th><th>Avance</th><th>Estado</th></tr></thead><tbody>' +
+      list.map(function (p) {
+        return '<tr ' + act('plan', p.id) + ' tabindex="0"><td><div class="pname"><span class="pbadge ' + p.diag + '">' + p.short + '</span><div><b>' + esc(p.name) + '</b><span class="mono">' + p.id + '</span>' + (p.prio ? ' <span class="prio">Prioritario</span>' : '') + '</div></div></td>' +
+          '<td>' + dg(p.diag) + '</td><td style="white-space:nowrap">' + (p.quad === 'qw' ? 'Quick win' : 'Estratégico') + '</td>' + (compact ? '' : '<td style="white-space:nowrap">' + p.effort + '</td>') +
+          '<td style="min-width:120px">' + stackBar(p.counts, p.tot, false, p.id) + '</td>' +
+          '<td><div class="cell-prog">' + prog(pct(p.cov, p.tot)) + '<b>' + p.cov + '/' + p.tot + '</b></div></td>' +
+          '<td>' + '<span class="chip s' + p.stc + '"><i></i>' + p.stateLabel + '</span></td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  function quadCard(plans, note) {
+    var qw = plans.filter(function (x) { return x.quad === 'qw'; }), pe = plans.filter(function (x) { return x.quad === 'pe'; });
+    var bub = function (p) { return '<button type="button" class="bubble' + (p.closed ? ' closed' : (p.any ? ' any' : '')) + (p.prio ? ' prio' : '') + '" ' + act('plan', p.id) + tip('<b>' + p.id + ' · ' + p.stateLabel + '</b><br>' + esc(p.name) + '<br>' + p.cov + '/' + p.tot + ' cubiertas') + ' aria-label="' + esc(p.id + ' ' + p.name) + '">' + (plans.length > 8 ? p.id.replace('-P', '') : p.short) + '</button>'; };
+    return '<div class="card"><div class="card-h"><h2>Matriz de priorización</h2></div><div class="card-b quad">' +
+      '<p class="muted" style="font-size:12px">' + note + '</p>' +
+      '<div class="qz qw"><div><h3>Quick wins</h3><span class="muted" style="font-size:11px">Alto impacto · baja complejidad</span></div><div class="bub">' + qw.map(bub).join('') + '</div></div>' +
+      '<div class="qz pe"><div><h3>Proyectos estratégicos</h3><span class="muted" style="font-size:11px">Alto impacto · alta complejidad</span></div><div class="bub">' + pe.map(bub).join('') + '</div></div>' +
+      '<div class="legend" style="font-size:11.5px"><span><i style="background:var(--s3);border-radius:50%"></i>Cerrado</span><span><i style="border:2.5px solid var(--s1);border-radius:50%;background:transparent"></i>En curso</span><span><i style="border:2.5px solid var(--s0);border-radius:50%;background:transparent"></i>No iniciado</span><span><i style="outline:2px dashed var(--crit);outline-offset:1px;border-radius:50%;background:transparent"></i>Prioritario</span></div>' +
+      '</div></div>';
+  }
+
+  function recsTable(rows, scopeN, showDiag) {
+    var h = '<div class="tbl-wrap"><table class="mx"><thead><tr><th>Código</th>' + (showDiag ? '<th>Diag.</th>' : '') + '<th>Proceso relacionado</th><th>Hallazgo</th><th>Recomendación</th><th>Criticidad</th><th>Impacto</th><th>Probabilidad</th><th>Complejidad</th><th>Plan</th><th>Estado</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr ' + act('rec', r.code) + ' tabindex="0"><td style="white-space:nowrap"><b class="mono">' + esc(r.code) + '</b>' + (r.isNew ? '<br><span class="newtag">NUEVA</span>' : '') + '</td>' +
+          (showDiag ? '<td>' + dg(r.diag) + '</td>' : '') +
+          '<td style="min-width:140px">' + esc(r.groupName) + '</td>' +
+          '<td class="wide">' + (r.hallazgo ? esc(r.hallazgo) : '<span class="pending">Por completar</span>') + '</td>' +
+          '<td class="wide">' + esc(r.title) + '</td>' +
+          '<td>' + critB(r.crit) + '</td><td>' + lv(r.I, IMP[r.I]) + '</td><td>' + lv(r.P, LVL[r.P]) + '</td><td>' + lv(r.C, LVL[r.C]) + '</td>' +
+          '<td style="white-space:nowrap;font-weight:700;' + (r.noPlan ? 'color:var(--crit)' : '') + '"><span class="mono">' + (r.plan ? esc(r.plan) : (r.isItgc ? 'Vía TI' : 'Sin plan')) + '</span></td>' +
+          '<td>' + chip(r.st) + '</td></tr>';
+      }).join('') + '</tbody></table>' + (rows.length ? '' : '<div class="empty">No hay recomendaciones que coincidan con los filtros.</div>') + '</div>';
+    return h;
+  }
+
+  function viewDiag(d) {
+    var grp = state.grp && state.grp.charAt(0) === (d.key === 'ci' ? 'c' : 't') ? state.grp : null;
+    var rev = d.recs.filter(function (r) { return r.st === 2; }).length;
+    var h = '<section class="card dband"><div style="display:flex;flex-direction:column;gap:14px;min-width:0">' +
+      '<div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap"><span class="big" style="font-size:52px;color:' + (d.key === 'ci' ? 'var(--accent)' : 'var(--ti)') + '">' + d.pct + '<small>%</small></span><span class="muted" style="font-size:13px;padding-bottom:6px">de cumplimiento del ' + (d.key === 'ci' ? 'diagnóstico de Control Interno' : 'diagnóstico de TI') + '</span></div>' +
+      stackBar(d.counts, d.recs.length, true, d.title) + legend(d.counts) + '</div>' +
+      '<div class="stats"><div class="stat"><span class="v">' + d.recs.length + '</span><span class="l">Recomendaciones</span></div><div class="stat"><span class="v" style="color:var(--s3)">' + d.counts[3] + '</span><span class="l">Cubiertas</span></div><div class="stat"><span class="v" style="color:var(--s2)">' + rev + '</span><span class="l">Por validar</span></div><div class="stat"><span class="v">' + d.closed + '<span class="muted" style="font-size:15px"> / ' + d.plans.length + '</span></span><span class="l">Planes cerrados</span></div></div></section>';
+
+    if (d.noPlan.length) {
+      h += '<div class="alertbar">' + I.warn + '<b style="flex:1 1 260px">' + (d.noPlan.length === 1 ? '1 recomendación sin plan de acción. Considérala para los siguientes planes.' : d.noPlan.length + ' recomendaciones sin plan de acción. Considéralas para los siguientes planes.') + '</b><span class="codes" style="margin:0">' + d.noPlan.map(codeBtn).join('') + '</span></div>';
+    }
+    if (d.key === 'ci') {
+      h += '<p class="muted" style="font-size:12.5px">ITGC no tiene plan propio en este diagnóstico: su avance sale de los planes del diagnóstico de TI.</p>';
+    }
+
+    h += '<section class="grid comp" role="group" aria-label="Filtrar por ' + d.groupWord + '">' + d.cols.map(function (col) {
+      var on = grp === col.g.id;
+      return '<button type="button" class="card compc" aria-pressed="' + on + '" ' + act('grp', on ? '' : col.g.id) + '><span class="eyebrow">' + col.g.n + '</span><span class="nm">' + col.g.name + '</span>' +
+        '<span class="v">' + col.cov + '<small> / ' + col.recs.length + ' cubiertas</small></span>' + stackBar(col.counts, col.recs.length, false, col.g.name) + '</button>';
+    }).join('') + '</section>';
+
+    h += '<section class="grid two"><div class="card"><div class="card-h"><h2>Planes de acción · ' + d.title + '</h2><span class="muted" style="font-size:11.5px">' + d.closed + ' de ' + d.plans.length + ' cerrados</span></div>' + plansTable(d.plans, true) + '</div>' +
+      quadCard(d.plans, 'Misma ubicación que en las láminas presentadas, pintada con el avance actual.') + '</section>';
+
+    var rows = d.recs.filter(function (r) { return !grp || r.group === grp; });
+    h += '<section class="card"><div class="card-h"><div style="display:flex;flex-direction:column;gap:2px"><h2>Recomendaciones' + (grp ? ' · ' + GNAME[grp] : '') + '</h2><span class="muted" style="font-size:11.5px">' + rows.length + ' de ' + d.recs.length + ' · clic en una fila para ver la ficha</span></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (grp ? '<button type="button" class="btn sec sm" ' + act('grp', '') + '>Quitar filtro</button>' : '') + '<button type="button" class="btn pri sm" ' + act('add', d.key) + '>' + I.plus + 'Agregar recomendación</button></div></div>' +
+      recsTable(rows, d.recs.length, false) + '</section>';
+    return h;
+  }
+
+  function viewPlanes(c) {
+    var list = c.plans.filter(function (p) { return state.pfil === 'all' || p.diag === state.pfil || (state.pfil === 'prio' && p.prio) || (state.pfil === 'open' && !p.closed); });
+    var closed = c.plans.filter(function (p) { return p.closed; }).length;
+    var any = c.plans.filter(function (p) { return !p.closed && p.any; }).length;
+    var h = '<section class="grid kpis">' +
+      '<div class="card kpi"><span class="eyebrow">Planes totales</span><span class="v">' + c.plans.length + '</span><span class="d">8 de Control Interno · 8 de TI</span></div>' +
+      '<div class="card kpi"><span class="eyebrow">Cerrados</span><span class="v" style="color:var(--s3)">' + closed + '</span><span class="d">Todas sus recomendaciones con evidencia validada.</span></div>' +
+      '<div class="card kpi"><span class="eyebrow">En curso</span><span class="v" style="color:var(--s1)">' + any + '</span><span class="d">Con al menos una recomendación en avance.</span></div>' +
+      '<div class="card kpi"><span class="eyebrow">No iniciados</span><span class="v">' + (c.plans.length - closed - any) + '</span><span class="d">Sin avance reportado en este corte.</span></div></section>';
+    h += '<section class="grid two" style="grid-template-columns:minmax(0,8fr) minmax(0,4fr)"><div class="card"><div class="card-h"><h2>Planes de acción</h2><div class="seg" role="group" aria-label="Filtrar planes">' +
+      [['all', 'Todos'], ['ci', 'Control Interno'], ['ti', 'TI'], ['prio', 'Prioritarios'], ['open', 'Abiertos']].map(function (o) { return '<button type="button" aria-pressed="' + (state.pfil === o[0]) + '" ' + act('pfil', o[0]) + '>' + o[1] + '</button>'; }).join('') +
+      '</div></div>' + plansTable(list, false) + '</div>' + quadCard(c.plans, 'Los 16 planes de ambos diagnósticos. CI = Control Interno, TI = Tecnología de la Información.') + '</section>';
+    return h;
+  }
+
+  function viewMatriz(c) {
+    var isTable = state.mview !== 'mapa', isRisk = state.mx !== 'prior';
+    var scope = c.recs.filter(function (r) { return state.ms === 'all' || r.diag === state.ms; });
+    var h = '<section class="card"><div class="card-h" style="align-items:flex-start"><div style="display:flex;flex-direction:column;gap:4px;flex:1 1 360px;min-width:0"><h2>Matriz de recomendaciones</h2><span class="muted" style="font-size:12px;max-width:70ch">' +
+      (isTable ? 'Registro de todas las recomendaciones de COSO y TI, una por fila, con su hallazgo y clasificación.' : (isRisk ? 'Impacto × probabilidad de ocurrencia: arriba a la derecha está la zona más crítica.' : 'Impacto × complejidad: arriba a la izquierda los quick wins, a la derecha los proyectos estratégicos.')) + '</span></div>' +
+      '<div class="seg" role="group" aria-label="Vista">' + [['tabla', 'Tabla'], ['mapa', 'Mapa de calor']].map(function (v) { return '<button type="button" aria-pressed="' + ((isTable ? 'tabla' : 'mapa') === v[0]) + '" ' + act('mview', v[0]) + '>' + v[1] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="card-b" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-bottom:1px solid var(--line-2)">' +
+      '<div class="seg" role="group" aria-label="Diagnóstico">' + [['all', 'Todas · ' + c.recs.length], ['ci', 'COSO · ' + c.ci.recs.length], ['ti', 'TI · ' + c.ti.recs.length]].map(function (o) { return '<button type="button" aria-pressed="' + (state.ms === o[0]) + '" ' + act('ms', o[0]) + '>' + o[1] + '</button>'; }).join('') + '</div>';
+    if (isTable) {
+      var fp = function (key, opts) { return '<div style="display:flex;flex-wrap:wrap;gap:5px" role="group">' + opts.map(function (o) { return '<button type="button" class="fpill" aria-pressed="' + (String(state[key]) === o[0]) + '" ' + act(key, o[0]) + '>' + o[1] + '</button>'; }).join('') + '</div>'; };
+      h += fp('mcrit', [['all', 'Toda criticidad'], ['Alto', 'Alto'], ['Medio', 'Medio'], ['Bajo', 'Bajo']]) +
+        fp('mst', [['all', 'Todo estado'], ['3', 'Cubiertas'], ['2', 'Por validar'], ['1', 'En curso'], ['0', 'No iniciado']]) +
+        fp('mplan', [['all', 'Con y sin plan'], ['none', 'Sin plan']]) +
+        '<input id="mx-search" class="inp" type="search" aria-label="Buscar recomendación" value="' + esc(state.q) + '" placeholder="Buscar código, hallazgo o recomendación…" style="flex:1 1 240px;min-width:0;width:auto;min-height:36px;padding:6px 12px">';
+    } else {
+      h += '<div class="seg" role="group" aria-label="Tipo de mapa">' + [['riesgo', 'Impacto × Probabilidad'], ['prior', 'Impacto × Complejidad']].map(function (t) { return '<button type="button" aria-pressed="' + ((isRisk ? 'riesgo' : 'prior') === t[0]) + '" ' + act('mx', t[0]) + '>' + t[1] + '</button>'; }).join('') + '</div>';
+    }
+    h += '</div>';
+    if (isTable) {
+      var q = String(state.q || '').toLowerCase().trim();
+      var rows = scope.filter(function (r) {
+        if (state.mcrit !== 'all' && r.crit !== state.mcrit) { return false; }
+        if (state.mst !== 'all' && String(r.st) !== String(state.mst)) { return false; }
+        if (state.mplan === 'none' && !r.noPlan) { return false; }
+        if (q && (r.code + ' ' + r.title + ' ' + (r.hallazgo || '') + ' ' + r.groupName + ' ' + (r.plan || '')).toLowerCase().indexOf(q) === -1) { return false; }
+        return true;
+      });
+      h += '<div style="padding:10px 20px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line-2);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b style="color:var(--ink)">Mostrando ' + rows.length + ' de ' + scope.length + '</b><span>Clic en una fila para ver o editar la ficha</span></div>' + recsTable(rows, scope.length, true) + '</section>';
+    } else {
+      var tone = function (z) {
+        var m = { 'Riesgo alto': ['var(--lvA-bg)', 'var(--lvA-fg)'], 'Riesgo medio': ['var(--lvM-bg)', 'var(--lvM-fg)'], 'Riesgo bajo': ['var(--lvB-bg)', 'var(--lvB-fg)'], 'Quick win': ['var(--accent-soft)', 'var(--accent)'], 'Proyecto estratégico': ['var(--ti-soft)', 'var(--ti)'], 'Complementario': ['var(--surface-2)', 'var(--ink-2)'], 'Evaluar / replantear': ['var(--s0-bg)', 'var(--s0-fg)'] };
+        return m[z];
+      };
+      h += '<div class="card-b"><div class="tbl-wrap"><div class="hm" style="min-width:560px">';
+      ['A', 'M', 'B'].forEach(function (i) {
+        h += '<div class="ax">' + IMP[i] + '</div>' + ['B', 'M', 'A'].map(function (x) {
+          var rs = scope.filter(function (r) { return r.I === i && (isRisk ? r.P : r.C) === x; });
+          var z = isRisk ? riskZone(i, x) : priorZone(i, x), t = tone(z);
+          return '<div class="hc" style="background:' + t[0] + '"><div class="z" style="color:' + t[1] + '"><span>' + z + '</span><b>' + rs.length + '</b></div><div class="codes">' + rs.map(codeBtn).join('') + '</div></div>';
+        }).join('');
+      });
+      h += '<div></div><div class="axx">Baja</div><div class="axx">Media</div><div class="axx">Alta</div></div></div>' +
+        '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:12px;color:var(--muted)"><span>↑ Impacto</span><span>' + (isRisk ? 'Probabilidad de ocurrencia' : 'Complejidad de implementación') + ' →</span></div>' +
+        '<div style="margin-top:10px">' + legend(scope.reduce(function (a, r) { a[r.st] += 1; return a; }, [0, 0, 0, 0])) + '</div></div></section>';
+    }
+    return h;
+  }
+
+  /* ===== Paneles ===== */
+  function evidence(r, withFicha) {
+    var fl = state.files[r.code] || [];
+    var h = fl.length ? '<div style="display:flex;flex-direction:column;gap:6px">' + fl.map(function (f) {
+      return '<div class="file"><span style="color:var(--accent);display:flex">' + I.file + '</span><div style="min-width:0"><b>' + esc(f.name) + '</b><span>' + esc(f.meta) + '</span></div></div>';
+    }).join('') + '</div>' : '<span class="muted" style="font-size:12.5px">Aún no hay evidencia cargada.</span>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">' + (withFicha ? '<button type="button" class="btn sec sm" ' + act('rec', r.code) + '>Ver ficha</button>' : '');
+    if (r.st < 2) { h += '<button type="button" class="btn pri sm" ' + act('upload', r.code) + '>Subir evidencia</button>'; }
+    if (r.st === 2) { h += '<button type="button" class="btn ok sm" ' + act('validate', r.code) + '>' + I.check + 'Validar y marcar cubierta</button><button type="button" class="btn sec sm" ' + act('devolver', r.code) + '>Devolver</button>'; }
+    if (r.st === 3) { h += '<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--s3-fg)">' + I.check + 'Evidencia validada</span>'; }
+    return h + '</div>';
+  }
+  function drawer(head, body, label) {
+    return '<div class="scrim"><button type="button" class="shut" aria-label="Cerrar" ' + act('close') + '></button><aside class="drawer" role="dialog" aria-modal="true" aria-label="' + label + '"><div class="dr-h">' + head + '</div><div class="dr-b">' + body + '</div></aside></div>';
+  }
+  function xBtn() { return '<button type="button" id="panel-close" class="x" aria-label="Cerrar" ' + act('close') + '>' + I.close + '</button>'; }
+
+  function viewPlanPanel(c) {
+    var p = c.plans.filter(function (x) { return x.id === state.pid; })[0];
+    if (!p) { return ''; }
+    var head = '<div class="top"><span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight:600">' + p.id + '</span>' + dg(p.diag) + (p.prio ? '<span class="prio">Prioritario</span>' : '') + '</span>' + xBtn() + '</div>' +
+      '<h2>' + esc(p.name) + '</h2><p style="font-size:13px;line-height:1.55;color:var(--ink-2);max-width:65ch">' + esc(p.desc) + '</p>' +
+      '<div class="kv"><div><span>Tipo</span><b>' + (p.quad === 'qw' ? 'Quick win' : 'Proyecto estratégico') + '</b></div><div><span>Esfuerzo estimado</span><b>' + p.effort + '</b></div><div><span>Avance</span><b>' + p.cov + ' de ' + p.tot + ' cubiertas</b></div><div><span>Estado</span><b><span class="chip s' + p.stc + '"><i></i>' + p.stateLabel + '</span></b></div></div>' +
+      stackBar(p.counts, p.tot, true, p.id);
+    var body = '<span class="eyebrow">Recomendaciones del plan</span>' + p.recs.map(function (r) {
+      return '<div class="recbox' + (r.st === 3 ? ' cov' : '') + '"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><b class="mono">' + esc(r.code) + '</b>' + critB(r.crit) + '<span style="flex:1 1 auto"></span>' + chip(r.st) + '</div>' +
+        '<span style="font-size:13px;line-height:1.45">' + esc(r.title) + '</span>' + evidence(r, true) + '</div>';
+    }).join('') +
+      '<div class="note"><span class="eyebrow">Nota del último corte</span><span>' + esc(p.note) + '</span></div>' +
+      '<p class="foot">Una recomendación pasa a "Cubierta" solo cuando tiene al menos una evidencia cargada y validada por el equipo.</p>';
+    return drawer(head, body, 'Detalle del plan de acción');
+  }
+
+  function viewRecPanel(c) {
+    var r = c.recs.filter(function (x) { return x.code === state.rid; })[0];
+    if (!r) { return ''; }
+    var pl = r.plan ? c.plans.filter(function (x) { return x.id === r.plan; })[0] : null;
+    var head = '<div class="top"><span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b class="mono" style="font-size:14px">' + esc(r.code) + '</b>' + dg(r.diag) + (r.isNew ? '<span class="newtag">NUEVA</span>' : '') + '</span>' + xBtn() + '</div>' +
+      '<span class="muted" style="font-size:12px">' + DNAME[r.diag] + ' · ' + GFULL[r.group] + '</span><h2>' + esc(r.title) + '</h2>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px">' + critB(r.crit) + chip(r.st) + '</div>';
+    var body = '<div class="sect"><span class="eyebrow">Hallazgo</span><p' + (r.hallazgo ? '' : ' class="pending"') + '>' + (r.hallazgo ? esc(r.hallazgo) : 'Por completar.') + '</p></div>' +
+      (r.detail && r.detail.length ? '<div class="sect"><span class="eyebrow">Alcance</span><ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.6;color:var(--ink-2)">' + r.detail.map(function (x) { return '<li style="' + (x.sub ? 'margin-left:16px;list-style:circle' : '') + '">' + esc(x.t) + '</li>'; }).join('') + '</ul></div>' : '') +
+      '<div class="kv"><div><span>Impacto</span><b>' + IMP[r.I] + '</b></div><div><span>Probabilidad de ocurrencia</span><b>' + LVL[r.P] + '</b></div><div><span>Complejidad</span><b>' + LVL[r.C] + '</b></div><div><span>Criticidad sugerida</span><b>' + sug(r.I, r.P) + '</b></div><div><span>Zona de riesgo</span><b>' + riskZone(r.I, r.P) + '</b></div><div><span>Priorización</span><b>' + priorZone(r.I, r.C) + '</b></div></div>' +
+      '<div class="sect"><span class="eyebrow">Plan de acción</span>';
+    if (pl) {
+      body += '<button type="button" class="card" ' + act('plan', pl.id) + ' style="display:flex;align-items:center;gap:12px;padding:12px 14px;text-align:left;box-shadow:none"><span class="pbadge ' + pl.diag + '">' + pl.short + '</span><span style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px"><b style="font-size:13px">' + esc(pl.name) + '</b><span class="muted" style="font-size:11.5px">' + pl.id + ' · ' + pl.cov + '/' + pl.tot + ' cubiertas</span></span>' + I.arrow + '</button>';
+    } else if (r.isItgc) {
+      body += '<p style="font-size:13px;color:var(--ink-2)">No tiene plan propio: se cubre con los planes del diagnóstico de TI.</p>';
+    } else {
+      body += '<div class="alertbar" style="font-size:12.5px">' + I.warn + '<span>Sin plan asignado. Edita la ficha para asignarla a un plan o déjala como insumo para uno nuevo.</span></div>';
+    }
+    body += '</div>';
+    if (!r.isItgc) { body += '<div class="sect"><span class="eyebrow">Evidencias</span>' + evidence(r, false) + '</div>'; }
+    body += '<div style="padding-top:14px;border-top:1px solid var(--line-2)"><button type="button" class="btn sec" ' + act('edit', r.code) + '>' + I.edit + 'Editar clasificación</button></div>';
+    return drawer(head, body, 'Ficha de la recomendación');
+  }
+
+  function viewForm() {
+    var F = state.form;
+    if (!F) { return ''; }
+    var isNew = F.mode === 'new';
+    var opts = function (list, key, eq) { return '<div class="opts' + (eq ? ' eq' : '') + '" role="group">' + list.map(function (o) { return '<button type="button" class="opt" aria-pressed="' + (String(F[key] || '') === o[0]) + '" ' + act(o[2], o[0]) + (o[3] ? ' title="' + esc(o[3]) + '"' : '') + '>' + o[1] + '</button>'; }).join('') + '</div>'; };
+    var lvOpts = function (k, labels) { return opts(['A', 'M', 'B'].map(function (v) { return [v, labels[v], 'flvl:' + k]; }).map(function (o) { return [o[0], o[1], 'flvl', null]; }), k, true).replace(/data-arg="([AMB])"/g, 'data-arg="' + k + ':$1"'); };
+    var plansOfDiag = PLANS.filter(function (p) { return p.diag === F.diag; });
+    var h = '<div class="modal-wrap"><button type="button" class="shut" aria-label="Cancelar" ' + act('close') + '></button><div class="modal" role="dialog" aria-modal="true" aria-label="' + (isNew ? 'Agregar recomendación' : 'Editar clasificación') + '">' +
+      '<div class="m-h"><div><span class="eyebrow">' + (isNew ? 'Nueva recomendación' : 'Editar ficha') + '</span><h2>' + (isNew ? 'Agregar recomendación' : 'Editar ' + esc(F.code)) + '</h2></div>' + xBtn() + '</div><div class="m-b">';
+    if (isNew) {
+      h += '<div class="field"><span class="lbl">Diagnóstico</span>' + opts([['ci', 'Control Interno (COSO)', 'fdiag'], ['ti', 'Tecnología de la Información', 'fdiag']], 'diag') + '</div>' +
+        '<div class="field"><span class="lbl">Proceso relacionado</span>' + opts(GROUPS[F.diag].map(function (g) { return [g.id, g.name, 'fgroup']; }), 'group') + '</div>';
+    } else {
+      h += '<div class="note" style="flex-direction:row;flex-wrap:wrap;gap:6px 10px"><b class="mono">' + esc(F.code) + '</b><span>' + DNAME[F.diag] + ' · ' + GNAME[F.group] + '</span></div>';
+    }
+    h += '<div class="field"><label class="lbl" for="f-hallazgo">Hallazgo</label><textarea id="f-hallazgo" class="inp" data-field="hallazgo" rows="3" placeholder="Qué se observó: situación, evidencia y alcance.">' + esc(F.hallazgo) + '</textarea></div>' +
+      '<div class="field"><label class="lbl" for="f-rec">Recomendación</label><textarea id="f-rec" class="inp" data-field="title" rows="3" placeholder="Qué se recomienda hacer, en lenguaje formal.">' + esc(F.title) + '</textarea></div>' +
+      '<div class="three"><div class="field"><span class="lbl">Impacto</span>' + lvOpts('I', IMP) + '</div><div class="field"><span class="lbl">Probabilidad</span>' + lvOpts('P', LVL) + '</div><div class="field"><span class="lbl">Complejidad</span>' + lvOpts('C', LVL) + '</div></div>' +
+      '<div class="field"><span class="lbl">Criticidad</span><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">' + opts([['Alto', 'Alto', 'fcrit'], ['Medio', 'Medio', 'fcrit'], ['Bajo', 'Bajo', 'fcrit']], 'crit') + '<span class="muted" style="font-size:12px">Sugerida: ' + sug(F.I, F.P) + ' (impacto × probabilidad)</span></div></div>' +
+      '<div class="field"><span class="lbl">Plan de acción</span>' + opts([['', 'Sin plan aún', 'fplan', 'Queda como insumo para un plan nuevo']].concat(plansOfDiag.map(function (p) { return [p.id, p.id, 'fplan', p.name]; })), 'plan') +
+      '<span class="muted" style="font-size:12px">' + (F.plan ? esc(F.plan + ' · ' + PLAN_BY[F.plan].name) : 'Sin plan: aparecerá como alerta para considerarla en los siguientes planes.') + '</span></div>' +
+      (F.err ? '<span role="alert" class="err">Completa el hallazgo y la recomendación para guardar.</span>' : '') + '</div>' +
+      '<div class="m-f"><span class="muted" style="flex:1 1 200px;font-size:12.5px">' + (isNew ? 'Se registrará como <b class="mono">' + nextCode(F.group) + '</b>' : 'Los cambios se reflejan en la matriz y en los conteos.') + '</span><button type="button" class="btn sec" ' + act('close') + '>Cancelar</button><button type="button" class="btn pri" ' + act('save') + '>' + (isNew ? 'Guardar recomendación' : 'Guardar cambios') + '</button></div></div></div>';
+    return h;
+  }
+
+  function viewConfirm() {
+    return '<div class="modal-wrap"><button type="button" class="shut" aria-label="Cancelar" ' + act('close') + '></button><div class="modal sm" role="dialog" aria-modal="true" aria-label="Restablecer demo">' +
+      '<div class="m-h"><div><h2>¿Restablecer la demo?</h2></div>' + xBtn() + '</div><div class="m-b"><p style="font-size:13.5px;color:var(--ink-2)">Se borran las recomendaciones agregadas, las evidencias subidas y los cambios hechos en este navegador. Los datos vuelven al corte del 23 de octubre.</p></div>' +
+      '<div class="m-f" style="justify-content:flex-end"><button type="button" class="btn sec" ' + act('close') + '>Cancelar</button><button type="button" class="btn danger" ' + act('resetok') + '>Restablecer</button></div></div></div>';
+  }
+
+  /* ===== Render ===== */
+  var app = document.getElementById('app');
+  var lastPanel = null;
+  var TITLES = {
+    resumen: ['Resumen ejecutivo', 'Estado consolidado de ambos diagnósticos'],
+    ci: ['Control Interno', 'Diagnóstico 1 · Marco COSO · 5 componentes'],
+    ti: ['Tecnología de la Información', 'Diagnóstico 2 · ITGC y Ciberseguridad · 5 procesos'],
+    planes: ['Planes de acción', '16 planes · cobertura por recomendación'],
+    matriz: ['Matriz de recomendaciones', 'Registro completo de hallazgos y clasificación']
+  };
+  function html() {
+    var c = compute();
+    var navItem = function (v, label, icon, n) { return '<button type="button" ' + act('view', v) + (state.view === v ? ' aria-current="page"' : '') + '>' + icon + '<span>' + label + '</span>' + (n != null ? '<span class="n">' + n + '</span>' : '') + '</button>'; };
+    var t = TITLES[state.view];
+    var h = '<div class="shell"><aside class="side">' +
+      '<div class="brand"><div class="brand-logo"><img src="logo.png" alt="Knowledge Consulting"></div><div class="brand-proj"><b>Cliente minero · Proyecto SOX</b><span>Fortalecimiento Integral SOX · Fase 0 y 1</span></div></div>' +
+      '<nav class="nav" aria-label="Vistas"><span class="nav-lbl">General</span>' + navItem('resumen', 'Resumen ejecutivo', I.home) +
+      '<span class="nav-lbl">Diagnósticos</span>' + navItem('ci', 'Control Interno', I.ci, c.ci.recs.length) + navItem('ti', 'Tecnología de la Información', I.ti, c.ti.recs.length) +
+      '<span class="nav-lbl">Gestión</span>' + navItem('planes', 'Planes de acción', I.plans, c.plans.length) + navItem('matriz', 'Matriz de recomendaciones', I.mx, c.recs.length) + '</nav>' +
+      '<div class="side-foot"><span class="tag-poc">POC · datos de ejemplo</span><div class="row">' + I.cal + '<span>Último corte <b>vie 23 oct 2026</b></span></div><span>Actualización manual semanal · uso interno del equipo</span><button type="button" class="linkbtn" ' + act('reset') + '>Restablecer demo</button></div>' +
+      '</aside><div class="main"><header class="topbar"><div class="ttl"><span class="crumb">Seguimiento de recomendaciones · ' + t[1] + '</span><h1>' + t[0] + '</h1></div>' +
+      '<a class="btn sec" href="../" style="text-decoration:none">Cambiar propuesta</a><span class="corte">' + I.cal + 'Corte vie 23 oct 2026</span><button type="button" class="btn pri" ' + act('add', state.view === 'ti' ? 'ti' : 'ci') + '>' + I.plus + 'Agregar recomendación</button></header><main class="content">';
+    if (state.view === 'resumen') { h += viewResumen(c); }
+    else if (state.view === 'matriz') { h += viewMatriz(c); }
+    else if (state.view === 'planes') { h += viewPlanes(c); }
+    else { h += viewDiag(state.view === 'ti' ? c.ti : c.ci); }
+    h += '<p class="foot">POC con datos anonimizados y de ejemplo (estados, evidencias y clasificaciones). Los cambios se guardan solo en este navegador; "Restablecer demo" vuelve al estado inicial.</p></main></div></div>';
+    if (state.panel === 'plan') { h += viewPlanPanel(c); }
+    if (state.panel === 'rec') { h += viewRecPanel(c); }
+    if (state.panel === 'form') { h += viewForm(); }
+    if (state.confirm) { h += viewConfirm(); }
+    return h;
+  }
+  function render() {
+    var ae = document.activeElement, fid = ae && ae.id ? ae.id : null, ss = null, se = null;
+    if (fid && typeof ae.selectionStart === 'number') { ss = ae.selectionStart; se = ae.selectionEnd; }
+    var scrollers = {};
+    document.querySelectorAll('.drawer,.modal').forEach(function (el, i) { scrollers[i] = el.scrollTop; });
+    app.innerHTML = html();
+    hideTip();
+    document.body.style.overflow = (state.panel || state.confirm) ? 'hidden' : '';
+    var panelKey = state.panel ? state.panel + ':' + (state.pid || state.rid || '') : (state.confirm ? 'confirm' : null);
+    if (panelKey && panelKey === lastPanel) { document.querySelectorAll('.drawer,.modal').forEach(function (el, i) { if (scrollers[i] != null) { el.scrollTop = scrollers[i]; } }); }
+    if (fid && document.getElementById(fid)) {
+      var el = document.getElementById(fid); el.focus();
+      if (ss !== null && el.setSelectionRange) { try { el.setSelectionRange(ss, se); } catch (e) { /* ignorar */ } }
+    } else if (panelKey && panelKey !== lastPanel) { var cb = document.getElementById('panel-close'); if (cb) { cb.focus(); } }
+    lastPanel = panelKey;
+    persist();
+  }
+
+  /* ===== Tooltip ===== */
+  var tipEl = document.getElementById('tip');
+  function hideTip() { tipEl.hidden = true; }
+  function placeTip(x, y) {
+    var w = tipEl.offsetWidth, hgt = tipEl.offsetHeight;
+    var nx = Math.min(window.innerWidth - w - 8, x + 14), ny = y - hgt - 12;
+    if (ny < 8) { ny = y + 18; }
+    tipEl.style.left = Math.max(8, nx) + 'px'; tipEl.style.top = ny + 'px';
+  }
+  app.addEventListener('mouseover', function (e) { var t = e.target.closest('[data-tip]'); if (!t) { hideTip(); return; } tipEl.innerHTML = t.getAttribute('data-tip'); tipEl.hidden = false; placeTip(e.clientX, e.clientY); });
+  app.addEventListener('mousemove', function (e) { if (!tipEl.hidden) { placeTip(e.clientX, e.clientY); } });
+  app.addEventListener('mouseleave', hideTip);
+
+  /* ===== Acciones ===== */
+  function openNew(diag) {
+    var d = diag === 'ti' ? 'ti' : 'ci';
+    var g = state.grp && state.grp.charAt(0) === (d === 'ci' ? 'c' : 't') ? state.grp : (d === 'ci' ? 'c1' : 't0');
+    set({ panel: 'form', form: { mode: 'new', diag: d, group: g, hallazgo: '', title: '', I: 'A', P: 'M', C: 'M', crit: 'Alto', critTouched: false, plan: '', err: false } });
+  }
+  function setF(patch) { set({ form: Object.assign({}, state.form, patch) }); }
+  function goMatriz(patch) { set(Object.assign({ view: 'matriz', mview: 'tabla', ms: 'all', mcrit: 'all', mst: 'all', mplan: 'all', q: '', panel: null }, patch)); hashTo('matriz'); window.scrollTo(0, 0); }
+  function hashTo(v) { try { history.replaceState(null, '', '#' + v); } catch (e) { /* ignorar */ } }
+  var A = {
+    view: function (v) { set({ view: v, grp: null, panel: null }); hashTo(v); window.scrollTo(0, 0); },
+    grp: function (g) { set({ grp: g || null }); },
+    plan: function (id) { set({ panel: 'plan', pid: id }); },
+    rec: function (code) { set({ panel: 'rec', rid: code }); },
+    close: function () { set({ panel: null, form: null, confirm: false }); },
+    add: function (d) { openNew(d); },
+    edit: function (code) {
+      var r = allRecs().filter(function (x) { return x.code === code; })[0];
+      if (!r) { return; }
+      set({ panel: 'form', form: { mode: 'edit', code: code, diag: r.diag, group: r.group, hallazgo: r.hallazgo || '', title: r.title, I: r.I, P: r.P, C: r.C, crit: r.crit, critTouched: true, plan: r.plan || '', err: false } });
+    },
+    fdiag: function (d) { setF({ diag: d, group: d === 'ci' ? 'c1' : 't0', plan: '' }); },
+    fgroup: function (g) { setF({ group: g }); },
+    flvl: function (arg) {
+      var k = arg.split(':')[0], v = arg.split(':')[1], patch = {}; patch[k] = v;
+      if ((k === 'I' || k === 'P') && !state.form.critTouched) { patch.crit = sug(k === 'I' ? v : state.form.I, k === 'P' ? v : state.form.P); }
+      setF(patch);
+    },
+    fcrit: function (c) { setF({ crit: c, critTouched: c !== sug(state.form.I, state.form.P) }); },
+    fplan: function (id) { setF({ plan: id || '' }); },
+    save: function () {
+      var F = state.form;
+      if (!String(F.hallazgo).trim() || !String(F.title).trim()) { setF({ err: true }); return; }
+      var fields = { hallazgo: String(F.hallazgo).trim(), title: String(F.title).trim(), I: F.I, P: F.P, C: F.C, crit: F.crit, plan: F.plan || null };
+      if (F.mode === 'edit') {
+        var edits = Object.assign({}, state.edits); edits[F.code] = Object.assign({}, edits[F.code] || {}, fields);
+        set({ edits: edits, panel: 'rec', rid: F.code, form: null }); return;
+      }
+      var code = nextCode(F.group);
+      var rec = Object.assign({ code: code, diag: F.diag, group: F.group, init: 0, detail: [], isNew: true }, fields);
+      var status = Object.assign({}, state.status); status[code] = 0;
+      set({ added: state.added.concat([rec]), status: status, panel: 'rec', rid: code, form: null });
+    },
+    upload: function (code) {
+      var files = Object.assign({}, state.files);
+      files[code] = (files[code] || []).concat([{ name: 'Evidencia_' + code + '_demo.pdf', meta: 'Equipo Knowledge · ' + new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · pendiente de validar' }]);
+      var status = Object.assign({}, state.status); status[code] = 2;
+      set({ files: files, status: status });
+    },
+    validate: function (code) { if (!(state.files[code] || []).length) { return; } var s = Object.assign({}, state.status); s[code] = 3; set({ status: s }); },
+    devolver: function (code) { var s = Object.assign({}, state.status); s[code] = 1; set({ status: s }); },
+    pfil: function (v) { set({ pfil: v }); },
+    mview: function (v) { set({ mview: v }); },
+    ms: function (v) { set({ ms: v }); },
+    mx: function (v) { set({ mx: v }); },
+    mcrit: function (v) { set({ mcrit: v }); },
+    mst: function (v) { set({ mst: v }); },
+    mplan: function (v) { set({ mplan: v }); },
+    mfilter: function (v) { goMatriz({ mcrit: v, mst: 'all' }); },
+    mstatus: function (v) { goMatriz({ mst: v }); },
+    mnoplan: function () { goMatriz({ mplan: 'none' }); },
+    reset: function () { set({ confirm: true, panel: null, form: null }); },
+    resetok: function () { set({ status: initStatus(), files: initFiles(), added: [], edits: {}, panel: null, form: null, confirm: false }); }
+  };
+  app.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) { return; }
+    var fn = A[el.getAttribute('data-act')];
+    if (fn) { fn(el.getAttribute('data-arg')); }
+  });
+  app.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.tagName === 'TR' && e.target.hasAttribute('data-act')) { e.preventDefault(); e.target.click(); }
+  });
+  app.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.getAttribute('data-field') && state.form) { state.form[t.getAttribute('data-field')] = t.value; return; }
+    if (t.id === 'mx-search') { state.q = t.value; render(); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && (state.panel || state.confirm)) { set({ panel: null, form: null, confirm: false }); } });
+  render();
+})();
+</script>
+</body>
+</html>
